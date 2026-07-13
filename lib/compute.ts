@@ -211,7 +211,12 @@ export function sortResults(
   const dirFactor = dir === "asc" ? 1 : -1;
   const arr = [...results];
   arr.sort((a, b) => {
-    const primary = comparePrimary(a, b, key) * dirFactor;
+    let primary = comparePrimary(a, b, key);
+    // Collapse floating-point noise so an invariant metric (e.g. protein delivered in
+    // protein-only mode, where every row hits the target) falls cleanly to the
+    // tiebreaks (density, then name) instead of ordering by ~1e-13 differences.
+    if (Math.abs(primary) < 1e-9) primary = 0;
+    primary *= dirFactor;
     if (primary !== 0) return primary;
     // Tiebreak: denser first, then more protein, then name (all deterministic).
     if (key !== "density" && b.densityScore !== a.densityScore)
@@ -236,31 +241,28 @@ export function buildResults(
   );
 }
 
-// Calorie-ceiling field validation (spec §A/§D). Returns a discriminated result so
-// the UI can show an inline message in --danger and render no table on invalid input.
-export type ParsedCeiling =
-  | { ok: true; value: number }
-  | { ok: false; error: string };
-
-export function parseCeiling(raw: string): ParsedCeiling {
-  const trimmed = raw.trim();
-  if (trimmed === "") {
-    return { ok: false, error: "Enter a per-person calorie ceiling." };
-  }
-  const value = Number(trimmed);
-  if (!Number.isFinite(value)) {
-    return { ok: false, error: "Enter a number, for example 500." };
-  }
-  if (value <= 0) {
-    return { ok: false, error: "Calorie ceiling must be greater than 0." };
-  }
-  return { ok: true, value };
+// Protein-anchored serving: the serving that delivers the protein target exactly
+// (calories then vary per food). Used when only a protein target is set.
+export function buildByProtein(
+  foods: Food[],
+  proteinTarget: number,
+  key: SortKey = DEFAULT_SORT_KEY,
+  dir: SortDir = DEFAULT_SORT_DIR,
+): ServingResult[] {
+  return sortResults(
+    foods.map((f) =>
+      computeServingAtGrams(f, (proteinTarget * 100) / f.proteinPer100g),
+    ),
+    key,
+    dir,
+  );
 }
 
-// Optional protein target (grams). 0 = off. When set, it switches the calorie field
-// from an exact anchor into a two-target band search (see matchServingGrams): only
-// foods whose serving lands within ±tol of both targets are shown.
-export function parseProteinTarget(raw: string | number): number {
+// Optional positive-number target — used by BOTH the calorie and protein fields, which
+// are each optional (spec §D). Blank / non-numeric / ≤ 0 all mean "off" (0). Which
+// fields are set decides the mode: calorie-only (anchor to calories), protein-only
+// (anchor to protein), both (±tol two-target band search), or neither (prompt).
+export function parseOptionalTarget(raw: string | number): number {
   const value = typeof raw === "number" ? raw : Number(String(raw).trim());
   if (!Number.isFinite(value) || value <= 0) return 0;
   return value;

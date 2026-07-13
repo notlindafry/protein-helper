@@ -13,10 +13,10 @@ export default function Page() {
           <InstallPwa />
         </div>
         <p className="max-w-2xl text-[var(--text-muted)]">
-          Set a per-person calorie target for dinner — add a protein target to
-          find servings that fit both within ±10%. Each row is one protein, ranked
-          by the protein it delivers with a micronutrient-density score alongside.
-          Tap any column to re-sort; portion from the serving shown.
+          Search dinner proteins by a protein target, a calorie target, or both
+          (both = servings that fit each within ±10%). Each row is one protein
+          with its serving, the protein it delivers, and a micronutrient-density
+          score. Tap any column to re-sort; portion from the serving shown.
         </p>
       </header>
 

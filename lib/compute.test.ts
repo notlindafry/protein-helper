@@ -5,10 +5,10 @@ import {
   computeServingAtGrams,
   buildResults,
   buildMatches,
+  buildByProtein,
   matchServingGrams,
   sortResults,
-  parseCeiling,
-  parseProteinTarget,
+  parseOptionalTarget,
   validateDataset,
 } from "./compute";
 import { GRAMS_PER_OUNCE } from "./constants";
@@ -147,23 +147,24 @@ describe("sorting (§C3)", () => {
   });
 });
 
-describe("parseCeiling / parseProteinTarget", () => {
-  it("accepts positive ceilings", () => {
-    expect(parseCeiling("500")).toEqual({ ok: true, value: 500 });
+describe("parseOptionalTarget (calorie + protein fields are both optional)", () => {
+  it("blank/0/negative/non-numeric = off (0), else the value", () => {
+    expect(parseOptionalTarget("")).toBe(0);
+    expect(parseOptionalTarget("0")).toBe(0);
+    expect(parseOptionalTarget("-3")).toBe(0);
+    expect(parseOptionalTarget("abc")).toBe(0);
+    expect(parseOptionalTarget("500")).toBe(500);
+    expect(parseOptionalTarget("32.5")).toBe(32.5);
   });
-  it("rejects empty, non-numeric, zero, negative", () => {
-    expect(parseCeiling("").ok).toBe(false);
-    expect(parseCeiling("abc").ok).toBe(false);
-    expect(parseCeiling("0").ok).toBe(false);
-    expect(parseCeiling("-5").ok).toBe(false);
-  });
-  it("protein target: blank/0/negative = off, else the value", () => {
-    expect(parseProteinTarget("")).toBe(0);
-    expect(parseProteinTarget("0")).toBe(0);
-    expect(parseProteinTarget("-3")).toBe(0);
-    expect(parseProteinTarget("abc")).toBe(0);
-    expect(parseProteinTarget("50")).toBe(50);
-    expect(parseProteinTarget("32.5")).toBe(32.5);
+});
+
+describe("protein-only mode (buildByProtein)", () => {
+  it("scales every food to deliver the protein target exactly, keeping all foods", () => {
+    const a = food({ id: "a", caloriesPer100g: 100, proteinPer100g: 20 });
+    const b = food({ id: "b", caloriesPer100g: 200, proteinPer100g: 10 });
+    const out = buildByProtein([a, b], 50, "density", "desc");
+    expect(out.length).toBe(2);
+    for (const r of out) expect(r.proteinDelivered).toBeCloseTo(50, 6);
   });
 });
 

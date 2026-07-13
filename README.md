@@ -1,13 +1,13 @@
 # gains-helper
 
-Dinner portion-and-nutrient reference (revision v2). Set a **per-person calorie
-target** (e.g. `500`); every row is **one protein scaled to a serving at that target**,
-showing the protein it delivers, its macros, and its micronutrient value, **ranked by
-protein delivered** with a micronutrient-density score alongside. Add a **protein
-target** and it becomes a **two-target search**: only foods whose serving fits **both**
-the calorie and protein targets within **±10%** are shown (e.g. 500 cal & 50 g →
-450–550 cal and 45–55 g). Results are intentionally static; variety comes from choosing
-different rows, then portioning from the serving shown.
+Dinner portion-and-nutrient reference (revision v2). Search by a **protein target**, a
+**per-person calorie target**, or both — both fields are optional. Calorie-only anchors
+each serving to the calorie target (protein varies); protein-only scales each serving to
+deliver the protein target (calories vary); **both** runs a **two-target ±10% search**
+that shows only foods whose serving fits both (e.g. 500 cal & 50 g → 450–550 cal and
+45–55 g). Every row is one protein with the serving, protein delivered, macros, and a
+micronutrient-density score. Results are intentionally static; variety comes from
+choosing different rows, then portioning from the serving shown.
 
 This is **not** a meal builder: no running total, no stacking, no persistence — still
 stateless and fully client-side over baked-in data (no runtime API, no tokens).
@@ -144,19 +144,19 @@ works for the authenticated user.
 ## Decisions taken (spec §14 + revision §F)
 
 1. **Auth:** Option A — Vercel Password Protection.
-2. **Anchor:** calorie-first — the ceiling is the anchor and the serving is "max at
-   ceiling" (revision §A). **Default sort: protein delivered, descending** — protein is
-   the primary consideration; the micronutrient density score is secondary (it breaks
-   ties and is one click away as its own column). Headers re-sort.
+2. **Search modes:** the calorie and protein fields are both optional — calorie-only
+   (anchor each serving to the calorie target), protein-only (scale each serving to the
+   protein target), both (±10% two-target search), or neither (a prompt). **Default
+   sort: protein delivered, descending**, except protein-only mode, where every row hits
+   the target so the order defaults to micronutrient density. Headers re-sort.
 3. **Weight basis:** per-category (raw meat/fish, cooked legumes/grains, as-sold
    dairy/eggs/tofu/powder), shown as a small basis label on each row.
-4. **Protein target → two-target band search:** a protein target (blank = off) switches
-   the calorie field from an exact anchor into a ±10% (`SEARCH_TOLERANCE`) search over
-   both axes — only foods whose serving lands within ±10% of *both* targets are shown,
-   each at the serving that best hits the protein target inside the feasible overlap
-   (`matchServingGrams`). Because calories and protein scale together per food, this
-   filters by protein-per-calorie ratio and uses the calorie slack to catch near-misses.
-   The fixed 30 g `DINNER_PROTEIN_FLOOR` flag still marks low-protein rows.
+4. **Two-target ±10% search:** when both targets are set, only foods whose serving lands
+   within ±10% (`SEARCH_TOLERANCE`) of *both* are shown, each at the serving that best
+   hits the protein target inside the feasible overlap (`matchServingGrams`). Because
+   calories and protein scale together per food, this filters by protein-per-calorie
+   ratio and uses the calorie slack to catch near-misses. The fixed 30 g
+   `DINNER_PROTEIN_FLOOR` flag still marks low-protein rows.
 
 ## Project structure
 
