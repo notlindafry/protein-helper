@@ -211,6 +211,15 @@ export function parsePeople(raw: string | number): number {
   return Math.floor(value);
 }
 
+// Optional "minimum protein delivered" filter (grams). 0 = off (show everything).
+// Used to restrict the list to servings that deliver at least this much protein at
+// the calorie ceiling (e.g. "500-cal servings with ≥ 40 g protein").
+export function parseMinProtein(raw: string | number): number {
+  const value = typeof raw === "number" ? raw : Number(String(raw).trim());
+  if (!Number.isFinite(value) || value <= 0) return 0;
+  return value;
+}
+
 // Dataset integrity, enforced at import (build) time. Spec §A adds the
 // caloriesPer100g > 0 guard (the serving divides by it); §10 keeps the liquid-density
 // build-time error; and the density score requires the micros block to be present.

@@ -5,6 +5,7 @@ import {
   buildResults,
   parseCeiling,
   parsePeople,
+  parseMinProtein,
   DEFAULT_SORT_KEY,
   DEFAULT_SORT_DIR,
   type SortKey,
@@ -29,16 +30,26 @@ const INITIAL_CEILING = "500";
 export default function CalorieCeilingApp() {
   const [rawCeiling, setRawCeiling] = useState(INITIAL_CEILING);
   const [submittedCeiling, setSubmittedCeiling] = useState(INITIAL_CEILING);
+  const [minProteinRaw, setMinProteinRaw] = useState("");
   const [peopleRaw, setPeopleRaw] = useState("1");
   const [sortKey, setSortKey] = useState<SortKey>(DEFAULT_SORT_KEY);
   const [sortDir, setSortDir] = useState<SortDir>(DEFAULT_SORT_DIR);
 
   const parsed = useMemo(() => parseCeiling(submittedCeiling), [submittedCeiling]);
   const people = parsePeople(peopleRaw);
+  const minProtein = parseMinProtein(minProteinRaw);
 
-  const results = useMemo(
+  const allResults = useMemo(
     () => (parsed.ok ? buildResults(FOODS, parsed.value, sortKey, sortDir) : []),
     [parsed, sortKey, sortDir],
+  );
+  // Filter to servings that deliver at least the requested protein (0 = show all).
+  const results = useMemo(
+    () =>
+      minProtein > 0
+        ? allResults.filter((r) => r.proteinDelivered >= minProtein)
+        : allResults,
+    [allResults, minProtein],
   );
 
   function handleSubmit(e: React.FormEvent) {
@@ -92,7 +103,37 @@ export default function CalorieCeilingApp() {
             </div>
           </div>
 
-          <div className="flex w-28 flex-col gap-2">
+          <div className="flex w-32 flex-col gap-2">
+            <label
+              htmlFor="min-protein"
+              className="text-sm font-medium text-[var(--text-muted)]"
+            >
+              Min protein
+            </label>
+            <div className="relative">
+              <input
+                id="min-protein"
+                name="min-protein"
+                type="number"
+                inputMode="numeric"
+                min={0}
+                step="any"
+                autoComplete="off"
+                placeholder="any"
+                value={minProteinRaw}
+                onChange={(e) => setMinProteinRaw(e.target.value)}
+                className="w-full rounded-[var(--radius)] border border-[var(--border-strong)] bg-[var(--surface)] px-4 py-3 pr-9 font-display text-3xl text-[var(--text-strong)] outline-none transition-colors focus:border-[var(--accent)]"
+              />
+              <span
+                aria-hidden="true"
+                className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-lg text-[var(--text-faint)]"
+              >
+                g
+              </span>
+            </div>
+          </div>
+
+          <div className="flex w-24 flex-col gap-2">
             <label
               htmlFor="people"
               className="text-sm font-medium text-[var(--text-muted)]"
@@ -136,21 +177,39 @@ export default function CalorieCeilingApp() {
             Per person at{" "}
             <strong className="text-[var(--text-strong)]">{parsed.value} cal</strong>
             {people > 1 ? (
+              <span className="text-[var(--text-muted)]"> (×{people} people)</span>
+            ) : null}
+            {minProtein > 0 ? (
               <>
                 {" "}
-                <span className="text-[var(--text-muted)]">(×{people} people)</span>
+                delivering{" "}
+                <strong className="text-[var(--text-strong)]">≥{minProtein} g</strong>{" "}
+                protein
               </>
             ) : null}
             , sorted by {SORT_LABEL[sortKey]}.
+            {minProtein > 0 ? (
+              <span className="text-[var(--text-muted)]">
+                {" "}
+                Showing {results.length} of {allResults.length}.
+              </span>
+            ) : null}
           </p>
           <Legend />
-          <ResultsTable
-            results={results}
-            people={people}
-            sortKey={sortKey}
-            sortDir={sortDir}
-            onSort={handleSort}
-          />
+          {results.length === 0 ? (
+            <p className="rounded-[var(--radius)] border border-[var(--border)] bg-[var(--surface)] px-4 py-6 text-center text-[var(--text-muted)]">
+              No food delivers ≥{minProtein} g protein within {parsed.value} cal.
+              Lower the minimum or raise the ceiling.
+            </p>
+          ) : (
+            <ResultsTable
+              results={results}
+              people={people}
+              sortKey={sortKey}
+              sortDir={sortDir}
+              onSort={handleSort}
+            />
+          )}
         </section>
       )}
     </div>

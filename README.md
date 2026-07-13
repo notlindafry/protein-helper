@@ -147,7 +147,10 @@ works for the authenticated user.
    ties and is one click away as its own column). Headers re-sort.
 3. **Weight basis:** per-category (raw meat/fish, cooked legumes/grains, as-sold
    dairy/eggs/tofu/powder), shown as a small basis label on each row.
-4. **Protein floor:** included at 30 g (`DINNER_PROTEIN_FLOOR`).
+4. **Protein:** a **Min-protein filter** shows only servings that deliver at least the
+   entered grams at the ceiling (e.g. 500-cal servings with ≥ 40 g protein); blank = off.
+   The fixed 30 g `DINNER_PROTEIN_FLOOR` flag still marks low-protein rows when no
+   minimum is set.
 5. **People field:** included — optional count (default 1) shows a `×people` total
    alongside the per-person serving.
 

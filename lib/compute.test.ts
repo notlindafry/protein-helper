@@ -6,6 +6,7 @@ import {
   sortResults,
   parseCeiling,
   parsePeople,
+  parseMinProtein,
   validateDataset,
 } from "./compute";
 import { GRAMS_PER_OUNCE } from "./constants";
@@ -159,6 +160,14 @@ describe("parseCeiling / parsePeople", () => {
     expect(parsePeople(0)).toBe(1);
     expect(parsePeople("abc")).toBe(1);
     expect(parsePeople(2.9)).toBe(2);
+  });
+  it("min protein: blank/0/negative = off, else the value", () => {
+    expect(parseMinProtein("")).toBe(0);
+    expect(parseMinProtein("0")).toBe(0);
+    expect(parseMinProtein("-3")).toBe(0);
+    expect(parseMinProtein("abc")).toBe(0);
+    expect(parseMinProtein("40")).toBe(40);
+    expect(parseMinProtein("32.5")).toBe(32.5);
   });
 });
 
