@@ -8,7 +8,7 @@ export default function Page() {
       <header className="flex flex-col gap-2">
         <div className="flex items-start justify-between gap-4">
           <h1 className="font-display text-4xl font-bold text-[var(--text-strong)] sm:text-5xl">
-            Protein Target
+            gains<span className="text-[var(--accent)]">-</span>helper
           </h1>
           <InstallPwa />
         </div>

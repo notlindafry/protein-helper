@@ -11,6 +11,7 @@ import {
 } from "@/lib/compute";
 import { FOODS } from "@/lib/foods";
 import ResultsTable from "./ResultsTable";
+import Legend from "./Legend";
 
 const SORT_LABEL: Record<SortKey, string> = {
   food: "food name",
@@ -110,6 +111,7 @@ export default function ProteinTargetApp() {
             </strong>{" "}
             protein, sorted by {SORT_LABEL[sortKey]}.
           </p>
+          <Legend />
           <ResultsTable
             results={results}
             sortKey={sortKey}

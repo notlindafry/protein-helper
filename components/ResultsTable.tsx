@@ -7,7 +7,12 @@ import {
   formatMacro,
   formatServingSecondary,
 } from "@/lib/format";
-import { BasisBadge, CompleteBadge, LargeServingFlag } from "./Badges";
+import {
+  BasisBadge,
+  CompleteBadge,
+  LargeServingFlag,
+  NoteDisclosure,
+} from "./Badges";
 
 type Column = {
   key: SortKey;
@@ -38,22 +43,12 @@ function FoodName({ result }: { result: ServingResult }) {
   const { food } = result;
   return (
     <div className="flex flex-col gap-1.5">
-      <div className="flex items-baseline gap-1.5">
-        <span className="font-medium text-[var(--text-strong)]">{food.name}</span>
-        {food.note ? (
-          <span
-            title={food.note}
-            aria-label={food.note}
-            className="cursor-help text-[var(--text-faint)]"
-          >
-            &#9432;
-          </span>
-        ) : null}
-      </div>
-      <div className="flex flex-wrap items-center gap-1.5">
+      <span className="font-medium text-[var(--text-strong)]">{food.name}</span>
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
         <BasisBadge basis={food.weightBasis} />
         <CompleteBadge complete={food.isCompleteProtein} />
         {result.isImpractical ? <LargeServingFlag /> : null}
+        <NoteDisclosure note={food.note} />
       </div>
     </div>
   );

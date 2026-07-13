@@ -1,4 +1,4 @@
-# Protein Target
+# gains-helper
 
 Single-food protein-target tool. Enter a protein goal in grams and every row is **one
 protein source scaled to the serving that hits that goal on its own** — so each row

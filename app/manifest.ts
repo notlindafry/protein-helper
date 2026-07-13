@@ -7,8 +7,8 @@ import type { MetadataRoute } from "next";
 export default function manifest(): MetadataRoute.Manifest {
   return {
     id: "/",
-    name: "Protein Target",
-    short_name: "Protein",
+    name: "gains-helper",
+    short_name: "gains-helper",
     description:
       "Enter a protein goal and see each food scaled to the serving that hits it on its own.",
     start_url: "/",
