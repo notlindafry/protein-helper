@@ -76,3 +76,19 @@
     appearance: textfield;
   }
 }
+
+@layer components {
+  /* Home-screen title wordmark ("gains-helper"). */
+  .wordmark {
+    font-family: var(--font-display); /* Space Grotesk, then system sans fallback */
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--text-strong);
+  }
+
+  /* The hyphen in the wordmark, tinted with the sage accent. */
+  .dash {
+    color: var(--accent);
+  }
+}

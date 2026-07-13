@@ -7,8 +7,8 @@ export default function Page() {
     <main className="mx-auto flex min-h-screen w-full max-w-content flex-col gap-10 px-5 py-10 sm:px-8 sm:py-14">
       <header className="flex flex-col gap-2">
         <div className="flex items-start justify-between gap-4">
-          <h1 className="font-display text-4xl font-bold text-[var(--text-strong)] sm:text-5xl">
-            gains<span className="text-[var(--accent)]">-</span>helper
+          <h1 className="wordmark">
+            gains<span className="dash">-</span>helper
           </h1>
           <InstallPwa />
         </div>
