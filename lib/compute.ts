@@ -2,95 +2,148 @@ import type { Food } from "./types";
 import {
   GRAMS_PER_OUNCE,
   ML_PER_FLUID_OUNCE,
-  IMPRACTICAL_SOLID_GRAMS,
-  IMPRACTICAL_LIQUID_FLOZ,
+  NUTRIENT_CAP,
+  DINNER_PROTEIN_FLOOR,
+  HIGH_IN_PCT,
+  GOOD_SOURCE_PCT,
+  OMEGA3_REFERENCE_MG,
+  LARGE_PORTION_GRAMS,
+  LARGE_PORTION_FLOZ,
+  TRACKED_NUTRIENTS,
+  type TrackedNutrient,
+  type NutrientUnit,
 } from "./constants";
 
-// One computed row: a food scaled to the serving that hits the protein target on its
-// own. Full precision is kept here; rounding happens only at display time (spec §6).
+// One tracked nutrient at the ceiling serving: amount + %DV.
+export type NutrientAmount = {
+  key: TrackedNutrient;
+  label: string;
+  unit: NutrientUnit;
+  amount: number; // at the serving
+  pct: number; // % of Daily Value at the serving
+};
+
+// One computed row (revision spec §A): the serving that spends the calorie ceiling,
+// the protein it delivers, its macros, its micronutrient density, and highlights.
+// Full precision is kept here; rounding happens only at display time.
 export type ServingResult = {
   food: Food;
-  requiredGrams: number;
-  ounces: number; // weight ounces (shown for solids)
-  fluidOunces: number | null; // shown for liquids; null for solids
-  calories: number;
+  servingGrams: number;
+  ounces: number; // weight ounces (solids)
+  fluidOunces: number | null; // liquids only
+  calories: number; // ≈ the ceiling (kept for completeness)
+  proteinDelivered: number;
   fat: number;
   carbs: number;
   fiber: number;
-  isImpractical: boolean; // spec §10 large-serving flag
+  densityScore: number; // capped %DV sum across tracked nutrients (§C1)
+  nutrients: NutrientAmount[]; // every tracked nutrient at the serving
+  highlights: NutrientAmount[]; // "high in": pct ≥ 20, sorted desc (§C2)
+  goodSources: NutrientAmount[]; // "good source": 10 ≤ pct < 20
+  omega3Mg: number; // EPA+DHA at the serving (non-DV highlight, §B3)
+  isOmega3Source: boolean;
+  belowProteinFloor: boolean; // §C4
+  isLargePortion: boolean; // neutral note (§C5)
 };
 
-// Core computation (spec §6). Every row carries the same protein (= the target); the
-// differentiator is how much food that takes and what else the serving costs.
-export function computeServing(food: Food, targetProtein: number): ServingResult {
-  const requiredGrams = (100 * targetProtein) / food.proteinPer100g;
-  const scale = requiredGrams / 100;
+// Core computation (revision spec §A). The per-person calorie ceiling is the anchor;
+// the serving is "max at ceiling", and protein-delivered is a displayed outcome.
+export function computeServing(food: Food, ceiling: number): ServingResult {
+  const servingGrams = (ceiling * 100) / food.caloriesPer100g;
+  const scale = servingGrams / 100;
 
-  const calories = food.caloriesPer100g * scale;
+  const proteinDelivered = food.proteinPer100g * scale;
   const fat = food.fatPer100g * scale;
   const carbs = food.carbsPer100g * scale;
   const fiber = food.fiberPer100g * scale;
+  const calories = food.caloriesPer100g * scale;
 
-  const ounces = requiredGrams / GRAMS_PER_OUNCE;
-
+  const ounces = servingGrams / GRAMS_PER_OUNCE;
   let fluidOunces: number | null = null;
-  let isImpractical: boolean;
   if (food.isLiquid) {
-    // densityGPerMl is guaranteed present for liquids by validateDataset (spec §10).
-    const density = food.densityGPerMl as number;
-    fluidOunces = requiredGrams / density / ML_PER_FLUID_OUNCE;
-    isImpractical = fluidOunces > IMPRACTICAL_LIQUID_FLOZ;
-  } else {
-    isImpractical = requiredGrams > IMPRACTICAL_SOLID_GRAMS;
+    fluidOunces = servingGrams / (food.densityGPerMl as number) / ML_PER_FLUID_OUNCE;
   }
+
+  const nutrients: NutrientAmount[] = TRACKED_NUTRIENTS.map((n) => {
+    const amount = n.per100g(food) * scale;
+    const pct = n.dv > 0 ? (amount / n.dv) * 100 : 0;
+    return { key: n.key, label: n.label, unit: n.unit, amount, pct };
+  });
+
+  // NRF-style capped index: each nutrient contributes at most NUTRIENT_CAP %DV (§C1).
+  const densityScore = nutrients.reduce(
+    (sum, n) => sum + Math.min(n.pct, NUTRIENT_CAP),
+    0,
+  );
+
+  const highlights = nutrients
+    .filter((n) => n.pct >= HIGH_IN_PCT)
+    .sort((a, b) => b.pct - a.pct);
+  const goodSources = nutrients
+    .filter((n) => n.pct >= GOOD_SOURCE_PCT && n.pct < HIGH_IN_PCT)
+    .sort((a, b) => b.pct - a.pct);
+
+  const omega3Mg = (food.micros.omega3Mg ?? 0) * scale;
+  const isOmega3Source = omega3Mg >= OMEGA3_REFERENCE_MG;
+
+  const belowProteinFloor = proteinDelivered < DINNER_PROTEIN_FLOOR;
+  const isLargePortion = food.isLiquid
+    ? (fluidOunces as number) > LARGE_PORTION_FLOZ
+    : servingGrams > LARGE_PORTION_GRAMS;
 
   return {
     food,
-    requiredGrams,
+    servingGrams,
     ounces,
     fluidOunces,
     calories,
+    proteinDelivered,
     fat,
     carbs,
     fiber,
-    isImpractical,
+    densityScore,
+    nutrients,
+    highlights,
+    goodSources,
+    omega3Mg,
+    isOmega3Source,
+    belowProteinFloor,
+    isLargePortion,
   };
 }
 
-// Sortable columns. Every row holds the same protein, so protein is intentionally not
-// a sort key — sorting by it would do nothing (spec §8).
+// Sortable columns (spec §C3). Calories are ~constant (= the ceiling) so there is no
+// calories sort key.
 export type SortKey =
-  | "food"
-  | "grams"
+  | "density"
   | "serving"
-  | "calories"
+  | "protein"
+  | "fiber"
   | "fat"
   | "carbs"
-  | "fiber";
+  | "food";
 export type SortDir = "asc" | "desc";
 
-// Default sort (spec §8): calories ascending, then carbs ascending as tiebreak — the
-// fewest calories to hit the target surfaces first, matching eating in a deficit.
-export const DEFAULT_SORT_KEY: SortKey = "calories";
-export const DEFAULT_SORT_DIR: SortDir = "asc";
+// Default: micronutrient density, descending (spec §A/§C3).
+export const DEFAULT_SORT_KEY: SortKey = "density";
+export const DEFAULT_SORT_DIR: SortDir = "desc";
 
 function comparePrimary(a: ServingResult, b: ServingResult, key: SortKey): number {
   switch (key) {
     case "food":
       return a.food.name.localeCompare(b.food.name);
-    case "grams":
     case "serving":
-      // Both serving columns order by the underlying quantity of food (grams), which
-      // is unambiguous even when the oz/fl-oz column mixes weight and volume units.
-      return a.requiredGrams - b.requiredGrams;
-    case "calories":
-      return a.calories - b.calories;
+      return a.servingGrams - b.servingGrams;
+    case "protein":
+      return a.proteinDelivered - b.proteinDelivered;
+    case "fiber":
+      return a.fiber - b.fiber;
     case "fat":
       return a.fat - b.fat;
     case "carbs":
       return a.carbs - b.carbs;
-    case "fiber":
-      return a.fiber - b.fiber;
+    case "density":
+      return a.densityScore - b.densityScore;
   }
 }
 
@@ -104,54 +157,71 @@ export function sortResults(
   arr.sort((a, b) => {
     const primary = comparePrimary(a, b, key) * dirFactor;
     if (primary !== 0) return primary;
-    // Tiebreaks are always ascending: carbs, then calories, then name (spec §8).
-    if (key !== "carbs" && a.carbs !== b.carbs) return a.carbs - b.carbs;
-    if (key !== "calories" && a.calories !== b.calories)
-      return a.calories - b.calories;
+    // Tiebreak: denser first, then more protein, then name (all deterministic).
+    if (key !== "density" && b.densityScore !== a.densityScore)
+      return b.densityScore - a.densityScore;
+    if (b.proteinDelivered !== a.proteinDelivered)
+      return b.proteinDelivered - a.proteinDelivered;
     return a.food.name.localeCompare(b.food.name);
   });
   return arr;
 }
 
-// Build the full, sorted result set for a target.
 export function buildResults(
   foods: Food[],
-  targetProtein: number,
+  ceiling: number,
   key: SortKey = DEFAULT_SORT_KEY,
   dir: SortDir = DEFAULT_SORT_DIR,
 ): ServingResult[] {
   return sortResults(
-    foods.map((f) => computeServing(f, targetProtein)),
+    foods.map((f) => computeServing(f, ceiling)),
     key,
     dir,
   );
 }
 
-// Target-field validation (spec §10). Returns a discriminated result so the UI can
-// show an inline message in --danger and render no table on invalid input.
-export type ParsedTarget =
+// Calorie-ceiling field validation (spec §A/§D). Returns a discriminated result so
+// the UI can show an inline message in --danger and render no table on invalid input.
+export type ParsedCeiling =
   | { ok: true; value: number }
   | { ok: false; error: string };
 
-export function parseTarget(raw: string): ParsedTarget {
+export function parseCeiling(raw: string): ParsedCeiling {
   const trimmed = raw.trim();
   if (trimmed === "") {
-    return { ok: false, error: "Enter a protein goal in grams." };
+    return { ok: false, error: "Enter a per-person calorie ceiling." };
   }
   const value = Number(trimmed);
   if (!Number.isFinite(value)) {
-    return { ok: false, error: "Enter a number, for example 40." };
+    return { ok: false, error: "Enter a number, for example 500." };
   }
   if (value <= 0) {
-    return { ok: false, error: "Protein goal must be greater than 0." };
+    return { ok: false, error: "Calorie ceiling must be greater than 0." };
   }
   return { ok: true, value };
 }
 
-// Dataset integrity, enforced at import (build) time — spec §10 requires a missing
-// liquid density to be a build-time error, not a silent render. Also guards the
-// divide-by-protein in computeServing and catches duplicate ids.
+// Optional "number of people" field (spec §D). Defaults to 1 on any bad input.
+export function parsePeople(raw: string | number): number {
+  const value = typeof raw === "number" ? raw : Number(String(raw).trim());
+  if (!Number.isFinite(value) || value < 1) return 1;
+  return Math.floor(value);
+}
+
+// Dataset integrity, enforced at import (build) time. Spec §A adds the
+// caloriesPer100g > 0 guard (the serving divides by it); §10 keeps the liquid-density
+// build-time error; and the density score requires the micros block to be present.
 export function validateDataset(foods: Food[]): void {
+  const microKeys: (keyof Food["micros"])[] = [
+    "ironMg",
+    "potassiumMg",
+    "magnesiumMg",
+    "calciumMg",
+    "zincMg",
+    "vitaminB12Mcg",
+    "vitaminDMcg",
+    "seleniumMcg",
+  ];
   const seen = new Set<string>();
   for (const f of foods) {
     if (seen.has(f.id)) {
@@ -159,15 +229,28 @@ export function validateDataset(foods: Food[]): void {
     }
     seen.add(f.id);
 
-    if (!(f.proteinPer100g > 0)) {
+    if (!(f.caloriesPer100g > 0)) {
       throw new Error(
-        `Dataset error: food "${f.id}" must have proteinPer100g > 0.`,
+        `Dataset error: food "${f.id}" must have caloriesPer100g > 0 (serving divides by it).`,
       );
+    }
+    if (!(f.proteinPer100g > 0)) {
+      throw new Error(`Dataset error: food "${f.id}" must have proteinPer100g > 0.`);
     }
     if (f.isLiquid && !(typeof f.densityGPerMl === "number" && f.densityGPerMl > 0)) {
       throw new Error(
         `Dataset error: liquid food "${f.id}" is missing a positive densityGPerMl (spec §10).`,
       );
+    }
+    if (!f.micros || typeof f.micros !== "object") {
+      throw new Error(`Dataset error: food "${f.id}" is missing its micros block.`);
+    }
+    for (const key of microKeys) {
+      if (typeof f.micros[key] !== "number") {
+        throw new Error(
+          `Dataset error: food "${f.id}" micros.${String(key)} must be a number.`,
+        );
+      }
     }
   }
 }

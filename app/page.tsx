@@ -1,4 +1,4 @@
-import ProteinTargetApp from "@/components/ProteinTargetApp";
+import CalorieCeilingApp from "@/components/CalorieCeilingApp";
 import InstallPwa from "@/components/InstallPwa";
 import { FOODS } from "@/lib/foods";
 
@@ -13,24 +13,25 @@ export default function Page() {
           <InstallPwa />
         </div>
         <p className="max-w-2xl text-[var(--text-muted)]">
-          Enter a protein goal. Each row is one food scaled to the serving that
-          hits that goal on its own — so every row carries the same protein, and
-          the difference is how much food it takes and what else the serving
-          costs.
+          Set a per-person calorie ceiling for dinner. Each row is one protein
+          scaled to the serving that spends that ceiling — showing the protein it
+          delivers and its micronutrient value, sorted by nutrient density. Pick
+          the row you want; portion down from the serving shown.
         </p>
       </header>
 
-      <ProteinTargetApp />
+      <CalorieCeilingApp />
 
       <footer className="mt-auto border-t border-[var(--border)] pt-5 text-xs leading-relaxed text-[var(--text-faint)]">
         <p>
-          Nutrition values from the USDA FoodData Central (FDC) database
-          (Foundation Foods and SR Legacy, with a few Branded entries where no
-          generic exists). Every food records its {" "}
-          <code className="text-[var(--text-muted)]">fdcId</code> and data type
-          so each number is traceable. Values are per the referenced FDC entry
-          and rounded for display; measure to the stated basis (raw / cooked / as
-          sold). {FOODS.length} foods.
+          Macro and micronutrient values from the USDA FoodData Central (FDC)
+          database (Foundation Foods and SR Legacy, with a few Branded entries
+          where no generic exists). Every food records its{" "}
+          <code className="text-[var(--text-muted)]">fdcId</code> and data type so
+          each number is traceable. %DV uses FDA adult Daily Values; the density
+          score is a capped %DV sum across tracked nutrients at the shown serving.
+          Omega-3 (EPA+DHA) has no Daily Value and is a highlight only. Measure to
+          the stated basis (raw / cooked / as sold). {FOODS.length} foods.
         </p>
       </footer>
     </main>

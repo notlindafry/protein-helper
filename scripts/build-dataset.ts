@@ -1,21 +1,21 @@
 /**
- * Build-time FDC dataset regenerator / verifier (spec §2).
+ * Build-time FDC dataset regenerator / verifier (spec §2 + revision §B2).
  *
- * The shipped dataset in `lib/foods.ts` is hardcoded — the client bundle contains no
- * API key and makes no nutrition calls. This script is the "cleaner path" for
- * (re)resolving the per-100g values from the live USDA FoodData Central REST API. It
- * is BUILD-TIME ONLY and never imported by the app.
+ * The shipped dataset (lib/foods.ts macros/metadata + lib/micros.ts micronutrients)
+ * is hardcoded — the client bundle contains no API key and makes no nutrition calls.
+ * This script is the "cleaner path" for (re)resolving BOTH the macros and the
+ * micronutrients from the live USDA FoodData Central REST API. BUILD-TIME ONLY;
+ * never imported by the app.
  *
- * It reads the fdcId + metadata already chosen in `lib/foods.ts`, fetches those exact
+ * It reads the fdcId + metadata already chosen in lib/foods.ts, fetches those exact
  * FDC entries, and:
- *   - default (verify):  prints any per-100g value that drifts from the committed
- *                        dataset beyond a small tolerance, plus the resolved dataType.
- *   - --write:           emits `lib/foods.generated.ts` with refreshed nutrition
- *                        values + dataType (all other metadata preserved) so you can
- *                        diff it against the curated file and copy over.
+ *   - default (verify):  prints any per-100g value (macro or micro) that drifts from
+ *                        the committed dataset beyond a small tolerance.
+ *   - --write:           emits lib/foods.generated.ts (macros/base) and
+ *                        lib/micros.generated.ts (micronutrients) to diff and copy.
  *
  * Usage:
- *   FDC_API_KEY=your_key npm run build:data          # verify against live FDC
+ *   FDC_API_KEY=your_key npm run build:data
  *   FDC_API_KEY=your_key npm run build:data -- --write
  *
  * Get a free key at https://fdc.nal.usda.gov/api-key-signup.html (api.data.gov).
@@ -25,19 +25,32 @@ import { writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 import { FOODS } from "../lib/foods";
-import type { Food } from "../lib/types";
+import type { Food, Micronutrients } from "../lib/types";
 
 const API_BASE = "https://api.nal.usda.gov/fdc/v1";
-const TOLERANCE = 0.05; // 5% relative drift is flagged during verify
+const TOLERANCE = 0.1; // 10% relative drift is flagged (micros vary more across samples)
 
-// FDC nutrient numbers (stable across Foundation / SR Legacy).
+// FDC nutrient numbers. Macros are stable; verify the micro numbers against the
+// current FDC schema if anything looks off (revision §B2).
 const NUTRIENT = {
   protein: "203",
   fat: "204",
   carbs: "205",
   energyKcal: "208",
   fiber: "291",
+  iron: "303",
+  potassium: "306",
+  magnesium: "304",
+  calcium: "301",
+  zinc: "309",
+  vitaminB12: "418",
+  vitaminD: "328", // Vitamin D (D2 + D3), mcg  (324 is the IU version)
+  selenium: "317",
+  epa: "629", // 20:5 n-3 EPA
+  dha: "621", // 22:6 n-3 DHA
 } as const;
+
+const ALL_NUMBERS = Object.values(NUTRIENT).map(Number);
 
 type AbridgedNutrient = {
   number?: string;
@@ -56,13 +69,14 @@ type FdcFood = {
   foodNutrients?: AbridgedNutrient[];
 };
 
-type Per100g = {
+type Resolved = {
   proteinPer100g: number;
   caloriesPer100g: number;
   fatPer100g: number;
   carbsPer100g: number;
   fiberPer100g: number;
   fdcDataType: string;
+  micros: Micronutrients;
 };
 
 function num(n: AbridgedNutrient): string | undefined {
@@ -71,15 +85,11 @@ function num(n: AbridgedNutrient): string | undefined {
 function amt(n: AbridgedNutrient): number {
   return (n.amount ?? n.value ?? 0) as number;
 }
-
-function findByNumber(nutrients: AbridgedNutrient[], number: string): number {
+function byNumber(nutrients: AbridgedNutrient[], number: string): number {
   const hit = nutrients.find((n) => num(n) === number);
   return hit ? amt(hit) : 0;
 }
-
-function findEnergyKcal(nutrients: AbridgedNutrient[]): number {
-  // Prefer the classic "208" kcal entry; fall back to any Energy row in kcal
-  // (Foundation Foods sometimes reports Atwater energy under a different number).
+function energyKcal(nutrients: AbridgedNutrient[]): number {
   const direct = nutrients.find((n) => num(n) === NUTRIENT.energyKcal);
   if (direct) return amt(direct);
   const kcal = nutrients.find(
@@ -92,73 +102,83 @@ function findEnergyKcal(nutrients: AbridgedNutrient[]): number {
 
 async function fetchFoods(fdcIds: number[], apiKey: string): Promise<FdcFood[]> {
   const out: FdcFood[] = [];
-  // The /foods endpoint accepts up to 20 ids per call.
   for (let i = 0; i < fdcIds.length; i += 20) {
     const batch = fdcIds.slice(i, i + 20);
     const res = await fetch(`${API_BASE}/foods?api_key=${encodeURIComponent(apiKey)}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        fdcIds: batch,
-        format: "abridged",
-        nutrients: [203, 204, 205, 208, 291],
-      }),
+      body: JSON.stringify({ fdcIds: batch, format: "abridged", nutrients: ALL_NUMBERS }),
     });
     if (!res.ok) {
       throw new Error(
         `FDC API ${res.status} ${res.statusText}. Check FDC_API_KEY and rate limits.`,
       );
     }
-    const json = (await res.json()) as FdcFood[];
-    out.push(...json);
-    // Be polite to the ~1,000 req/hour default rate limit.
-    await new Promise((r) => setTimeout(r, 250));
+    out.push(...((await res.json()) as FdcFood[]));
+    await new Promise((r) => setTimeout(r, 250)); // be polite to the rate limit
   }
   return out;
 }
 
-function toPer100g(food: FdcFood): Per100g {
+function resolve(food: FdcFood): Resolved {
   const n = food.foodNutrients ?? [];
   return {
-    proteinPer100g: findByNumber(n, NUTRIENT.protein),
-    caloriesPer100g: findEnergyKcal(n),
-    fatPer100g: findByNumber(n, NUTRIENT.fat),
-    carbsPer100g: findByNumber(n, NUTRIENT.carbs),
-    fiberPer100g: findByNumber(n, NUTRIENT.fiber),
+    proteinPer100g: byNumber(n, NUTRIENT.protein),
+    caloriesPer100g: energyKcal(n),
+    fatPer100g: byNumber(n, NUTRIENT.fat),
+    carbsPer100g: byNumber(n, NUTRIENT.carbs),
+    fiberPer100g: byNumber(n, NUTRIENT.fiber),
     fdcDataType: food.dataType ?? "Unknown",
+    micros: {
+      ironMg: byNumber(n, NUTRIENT.iron),
+      potassiumMg: byNumber(n, NUTRIENT.potassium),
+      magnesiumMg: byNumber(n, NUTRIENT.magnesium),
+      calciumMg: byNumber(n, NUTRIENT.calcium),
+      zincMg: byNumber(n, NUTRIENT.zinc),
+      vitaminB12Mcg: byNumber(n, NUTRIENT.vitaminB12),
+      vitaminDMcg: byNumber(n, NUTRIENT.vitaminD),
+      seleniumMcg: byNumber(n, NUTRIENT.selenium),
+      omega3Mg: byNumber(n, NUTRIENT.epa) + byNumber(n, NUTRIENT.dha),
+    },
   };
 }
 
 function drift(a: number, b: number): number {
   if (a === 0 && b === 0) return 0;
-  const base = Math.max(Math.abs(a), Math.abs(b), 1e-9);
-  return Math.abs(a - b) / base;
+  return Math.abs(a - b) / Math.max(Math.abs(a), Math.abs(b), 1e-9);
 }
 
-function serializeFood(f: Food): string {
-  const lines: string[] = [];
-  lines.push("  {");
-  lines.push(`    id: ${JSON.stringify(f.id)},`);
-  lines.push(`    name: ${JSON.stringify(f.name)},`);
-  lines.push(`    category: ${JSON.stringify(f.category)},`);
-  lines.push(`    proteinPer100g: ${f.proteinPer100g},`);
-  lines.push(`    caloriesPer100g: ${f.caloriesPer100g},`);
-  lines.push(`    fatPer100g: ${f.fatPer100g},`);
-  lines.push(`    carbsPer100g: ${f.carbsPer100g},`);
-  lines.push(`    fiberPer100g: ${f.fiberPer100g},`);
-  lines.push(`    weightBasis: ${JSON.stringify(f.weightBasis)},`);
-  lines.push(`    isLiquid: ${f.isLiquid},`);
-  if (f.densityGPerMl !== undefined) {
-    lines.push(`    densityGPerMl: ${f.densityGPerMl},`);
-  }
-  lines.push(`    isCompleteProtein: ${f.isCompleteProtein},`);
-  lines.push(`    fdcId: ${JSON.stringify(f.fdcId)},`);
-  lines.push(`    fdcDataType: ${JSON.stringify(f.fdcDataType)},`);
-  if (f.note !== undefined) {
-    lines.push(`    note: ${JSON.stringify(f.note)},`);
-  }
-  lines.push("  },");
-  return lines.join("\n");
+const MICRO_KEYS: (keyof Micronutrients)[] = [
+  "ironMg",
+  "potassiumMg",
+  "magnesiumMg",
+  "calciumMg",
+  "zincMg",
+  "vitaminB12Mcg",
+  "vitaminDMcg",
+  "seleniumMcg",
+  "omega3Mg",
+];
+
+function serializeBase(f: Food): string {
+  const L: string[] = ["  {"];
+  L.push(`    id: ${JSON.stringify(f.id)},`);
+  L.push(`    name: ${JSON.stringify(f.name)},`);
+  L.push(`    category: ${JSON.stringify(f.category)},`);
+  L.push(`    proteinPer100g: ${f.proteinPer100g},`);
+  L.push(`    caloriesPer100g: ${f.caloriesPer100g},`);
+  L.push(`    fatPer100g: ${f.fatPer100g},`);
+  L.push(`    carbsPer100g: ${f.carbsPer100g},`);
+  L.push(`    fiberPer100g: ${f.fiberPer100g},`);
+  L.push(`    weightBasis: ${JSON.stringify(f.weightBasis)},`);
+  L.push(`    isLiquid: ${f.isLiquid},`);
+  if (f.densityGPerMl !== undefined) L.push(`    densityGPerMl: ${f.densityGPerMl},`);
+  L.push(`    isCompleteProtein: ${f.isCompleteProtein},`);
+  L.push(`    fdcId: ${JSON.stringify(f.fdcId)},`);
+  L.push(`    fdcDataType: ${JSON.stringify(f.fdcDataType)},`);
+  if (f.note !== undefined) L.push(`    note: ${JSON.stringify(f.note)},`);
+  L.push("  },");
+  return L.join("\n");
 }
 
 async function main() {
@@ -175,10 +195,10 @@ async function main() {
   const fdcIds = [...new Set(FOODS.map((f) => Number(f.fdcId)))].filter(
     (n) => Number.isFinite(n) && n > 0,
   );
-  console.log(`Fetching ${fdcIds.length} FDC entries…`);
+  console.log(`Fetching ${fdcIds.length} FDC entries (macros + micros)…`);
   const fetched = await fetchFoods(fdcIds, apiKey);
-  const byId = new Map<number, Per100g>();
-  for (const f of fetched) byId.set(f.fdcId, toPer100g(f));
+  const byId = new Map<number, Resolved>();
+  for (const f of fetched) byId.set(f.fdcId, resolve(f));
 
   let flagged = 0;
   const refreshed: Food[] = FOODS.map((food) => {
@@ -193,13 +213,14 @@ async function main() {
       ["fat", food.fatPer100g, live.fatPer100g],
       ["carbs", food.carbsPer100g, live.carbsPer100g],
       ["fiber", food.fiberPer100g, live.fiberPer100g],
+      ...MICRO_KEYS.map(
+        (k) => [k, food.micros[k] ?? 0, live.micros[k] ?? 0] as [string, number, number],
+      ),
     ];
     for (const [label, committed, fresh] of checks) {
       if (drift(committed, fresh) > TOLERANCE) {
         flagged++;
-        console.log(
-          `  ~ ${food.id} ${label}: committed ${committed} vs FDC ${fresh} (${food.fdcDataType} → ${live.fdcDataType})`,
-        );
+        console.log(`  ~ ${food.id} ${label}: committed ${committed} vs FDC ${fresh}`);
       }
     }
     return { ...food, ...live };
@@ -212,18 +233,34 @@ async function main() {
   );
 
   if (write) {
-    const __dirname = path.dirname(fileURLToPath(import.meta.url));
-    const outPath = path.join(__dirname, "..", "lib", "foods.generated.ts");
-    const header =
+    const dir = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "lib");
+
+    const foodsOut =
       "// AUTO-GENERATED by scripts/build-dataset.ts from live USDA FoodData Central.\n" +
-      "// Diff against lib/foods.ts and copy over the values you trust.\n" +
-      'import type { Food } from "./types";\n' +
-      'import { validateDataset } from "./compute";\n\n' +
-      "export const FOODS: Food[] = [\n";
-    const body = refreshed.map(serializeFood).join("\n");
-    const footer = "\n];\n\nvalidateDataset(FOODS);\n";
-    await writeFile(outPath, header + body + footer, "utf8");
-    console.log(`Wrote ${outPath}`);
+      "// Diff against lib/foods.ts and copy over the macro/base values you trust.\n" +
+      'import type { Food } from "./types";\n\n' +
+      "export const FOOD_BASE: Omit<Food, \"micros\">[] = [\n" +
+      refreshed.map(serializeBase).join("\n") +
+      "\n];\n";
+    await writeFile(path.join(dir, "foods.generated.ts"), foodsOut, "utf8");
+
+    const microsOut =
+      "// AUTO-GENERATED by scripts/build-dataset.ts from live USDA FoodData Central.\n" +
+      "// Diff against lib/micros.ts and copy over the values you trust.\n" +
+      'import type { Micronutrients } from "./types";\n\n' +
+      "export const MICROS: Record<string, Micronutrients> = {\n" +
+      refreshed
+        .map(
+          (f) =>
+            `  ${JSON.stringify(f.id)}: { ${MICRO_KEYS.map(
+              (k) => `${k}: ${f.micros[k] ?? 0}`,
+            ).join(", ")} },`,
+        )
+        .join("\n") +
+      "\n};\n";
+    await writeFile(path.join(dir, "micros.generated.ts"), microsOut, "utf8");
+
+    console.log(`Wrote ${dir}/foods.generated.ts and ${dir}/micros.generated.ts`);
   }
 }
 

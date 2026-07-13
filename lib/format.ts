@@ -16,6 +16,18 @@ export function formatMacro(grams: number): string {
   return grams.toFixed(1);
 }
 
+export function formatDensity(score: number): string {
+  return Math.round(score).toLocaleString("en-US");
+}
+
+export function formatPct(pct: number): string {
+  return `${Math.round(pct)}%`;
+}
+
+export function formatOmega3(mg: number): string {
+  return `${Math.round(mg).toLocaleString("en-US")} mg`;
+}
+
 // The oz / fl oz column mixes units per row: weight ounces for solids, fluid ounces
 // for liquids. The unit travels with the value so the column is never ambiguous.
 export function formatServingSecondary(r: ServingResult): string {

@@ -1,11 +1,13 @@
 # gains-helper
 
-Single-food protein-target tool. Enter a protein goal in grams and every row is **one
-protein source scaled to the serving that hits that goal on its own** — so each row
-carries the same protein (= your target) and the differentiator is how much food it
-takes and what else that serving costs (calories, fat, carbs, fiber).
+Dinner portion-and-nutrient reference (revision v2). Set a **per-person calorie
+ceiling** (e.g. `500`) and every row is **one protein scaled to the serving that spends
+that ceiling** — showing the protein it delivers, its macros, and its micronutrient
+value, **sorted by micronutrient density**. Results are intentionally static; variety
+comes from choosing different rows, then portioning down from the serving shown.
 
-This is **not** a meal builder: no running total, no stacking of foods (spec §11).
+This is **not** a meal builder: no running total, no stacking, no persistence — still
+stateless and fully client-side over baked-in data (no runtime API, no tokens).
 
 Live URL: **https://protein-helper.vercel.app**
 
@@ -118,12 +120,34 @@ works for the authenticated user.
 - `# SECURITY TODO`s mark deliberately-scoped-out controls (nonce-based CSP; in-app auth
   is handled at the platform edge instead).
 
-## Decisions taken (spec §14 open items)
+## Micronutrients & density (revision §B/§C)
+
+- Each food carries a per-100g `micros` block (`lib/micros.ts`): iron, potassium,
+  magnesium, calcium, zinc, vitamin B12, vitamin D, selenium, and omega-3 (EPA+DHA,
+  seafood). Fiber stays on `Food.fiberPer100g` (single source of truth).
+- **%DV** uses FDA adult Daily Values (`lib/constants.ts`, verified against the FDA
+  Nutrition Facts reference). **Density** is a capped %DV sum across the tracked
+  nutrients at the shown serving — each nutrient counts up to 100% so none dominates.
+- **Rich in** = nutrients at ≥20% DV in that serving (FDA "high in"). **Omega-3 has no
+  Daily Value** — it's a non-DV seafood highlight against a ~250 mg reference.
+- **Below-dinner-protein** flag (`--danger`) marks servings under 30 g protein;
+  **large-portion** is a neutral note for very low-calorie foods (big servings are the
+  point at a calorie ceiling).
+
+> Micronutrient values were resolved from USDA FDC reference data (the environment
+> blocks the live FDC API); each stays tied to the food's `fdcId`. Refresh/verify them
+> authoritatively with `npm run build:data` — the script now pulls the 9 micros too.
+
+## Decisions taken (spec §14 + revision §F)
 
 1. **Auth:** Option A — Vercel Password Protection.
-2. **Sort:** calories ascending, then carbs ascending; column headers re-sort.
+2. **Anchor:** calorie-first — the ceiling is the anchor and the serving is "max at
+   ceiling" (revision §A). Default sort: micronutrient density, descending.
 3. **Weight basis:** per-category (raw meat/fish, cooked legumes/grains, as-sold
    dairy/eggs/tofu/powder), shown as a small basis label on each row.
+4. **Protein floor:** included at 30 g (`DINNER_PROTEIN_FLOOR`).
+5. **People field:** included — optional count (default 1) shows a `×people` total
+   alongside the per-person serving.
 
 ## Project structure
 
@@ -133,16 +157,19 @@ app/
   layout.tsx         fonts (next/font), metadata, themeColor
   page.tsx           page shell + provenance footer
 components/
-  ProteinTargetApp.tsx  input + validation + summary + sort state (client)
-  ResultsTable.tsx      sortable table (desktop) / cards (mobile)
-  Badges.tsx            basis label, complete-protein badge, large-serving flag
+  CalorieCeilingApp.tsx ceiling + people input, validation, summary, sort state
+  ResultsTable.tsx      density-sorted table (desktop) / cards (mobile)
+  Badges.tsx            basis, complete-protein, rich-in, protein-floor, large-portion
+  Legend.tsx            always-visible key (density, rich-in, badges)
+  InstallPwa.tsx        service-worker registration + Android install button
 lib/
-  types.ts           Food schema (spec §3)
-  constants.ts       unit constants + impractical-serving thresholds
-  compute.ts         scaling, units, sort, validation (spec §6/§8/§10)
+  types.ts           Food + Micronutrients schema (spec §3, revision §B1)
+  constants.ts       units, Daily Values, density cap, thresholds, tracked nutrients
+  compute.ts         ceiling serving, density score, highlights, sort, validation
   format.ts          display rounding
-  foods.ts           the baked-in FDC dataset
+  foods.ts           baked-in FDC macros/metadata (attaches micros by id)
+  micros.ts          baked-in per-100g micronutrients (keyed by id)
   compute.test.ts    unit tests
 scripts/
-  build-dataset.ts   live-FDC verify/regenerate (build-time only)
+  build-dataset.ts   live-FDC verify/regenerate of macros + micros (build-time only)
 ```

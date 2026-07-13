@@ -1,5 +1,6 @@
 import type { Food } from "./types";
 import { validateDataset } from "./compute";
+import { MICROS } from "./micros";
 
 /**
  * Baked-in nutrition dataset (spec §2/§3). Values are per 100 g, sourced from USDA
@@ -20,7 +21,10 @@ import { validateDataset } from "./compute";
 const POWDER_NOTE =
   "Brand-dependent; USDA generic is an approximation — your product's label will differ.";
 
-export const FOODS: Food[] = [
+// Macro/metadata rows. Per-100g micronutrients live in lib/micros.ts (keyed by id)
+// and are attached below, so this array stays readable and the two concerns can be
+// refreshed independently by the build job.
+const FOOD_BASE: Omit<Food, "micros">[] = [
   // ── Poultry (basis: raw) ──────────────────────────────────────────────────
   {
     id: "chicken-breast-skinless-raw",
@@ -1340,5 +1344,14 @@ export const FOODS: Food[] = [
   },
 ];
 
-// Enforce dataset integrity at import (build) time (spec §10).
+// Attach per-100g micronutrients (lib/micros.ts) to each food by id.
+export const FOODS: Food[] = FOOD_BASE.map((f) => {
+  const micros = MICROS[f.id];
+  if (!micros) {
+    throw new Error(`Dataset error: no micros for "${f.id}" (see lib/micros.ts).`);
+  }
+  return { ...f, micros };
+});
+
+// Enforce dataset integrity at import (build) time (spec §10 + §A caloriesPer100g).
 validateDataset(FOODS);

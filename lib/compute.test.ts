@@ -1,18 +1,36 @@
 import { describe, it, expect } from "vitest";
-import type { Food } from "./types";
+import type { Food, Micronutrients } from "./types";
 import {
   computeServing,
   buildResults,
   sortResults,
-  parseTarget,
+  parseCeiling,
+  parsePeople,
   validateDataset,
 } from "./compute";
+import { GRAMS_PER_OUNCE } from "./constants";
 
-function food(partial: Partial<Food> & Pick<Food, "id" | "proteinPer100g">): Food {
+const ZERO_MICROS: Micronutrients = {
+  ironMg: 0,
+  potassiumMg: 0,
+  magnesiumMg: 0,
+  calciumMg: 0,
+  zincMg: 0,
+  vitaminB12Mcg: 0,
+  vitaminDMcg: 0,
+  seleniumMcg: 0,
+  omega3Mg: 0,
+};
+
+function food(
+  partial: Omit<Partial<Food>, "micros"> &
+    Pick<Food, "id"> & { micros?: Partial<Micronutrients> },
+): Food {
   return {
     name: partial.id,
     category: "Poultry",
-    caloriesPer100g: 0,
+    caloriesPer100g: 100,
+    proteinPer100g: 20,
     fatPer100g: 0,
     carbsPer100g: 0,
     fiberPer100g: 0,
@@ -22,109 +40,141 @@ function food(partial: Partial<Food> & Pick<Food, "id" | "proteinPer100g">): Foo
     fdcId: "0",
     fdcDataType: "SR Legacy",
     ...partial,
+    micros: { ...ZERO_MICROS, ...(partial.micros ?? {}) },
   };
 }
 
-const chicken = food({
-  id: "chicken",
-  proteinPer100g: 22.5,
-  caloriesPer100g: 120,
-  fatPer100g: 2.62,
-});
-
-describe("computeServing — solids", () => {
-  it("scales grams to hit the target protein", () => {
-    const r = computeServing(chicken, 40);
-    // 100 * 40 / 22.5 = 177.777...
-    expect(r.requiredGrams).toBeCloseTo(177.7778, 3);
-    // protein delivered is exactly the target
-    expect((r.requiredGrams / 100) * chicken.proteinPer100g).toBeCloseTo(40, 6);
+describe("computeServing — ceiling anchor (§A)", () => {
+  it("sets the serving that spends the calorie ceiling", () => {
+    const f = food({ id: "f", caloriesPer100g: 100, proteinPer100g: 20 });
+    const r = computeServing(f, 500);
+    expect(r.servingGrams).toBeCloseTo(500, 6); // 500 * 100 / 100
+    expect(r.calories).toBeCloseTo(500, 6);
+    expect(r.proteinDelivered).toBeCloseTo(100, 6); // 20 * 500/100
+    expect(r.ounces).toBeCloseTo(500 / GRAMS_PER_OUNCE, 4);
   });
 
-  it("scales macros by the same factor", () => {
-    const r = computeServing(chicken, 40);
-    expect(r.calories).toBeCloseTo(213.33, 2);
-    expect(r.fat).toBeCloseTo(4.658, 3);
+  it("scales macros to the serving", () => {
+    const f = food({ id: "f", caloriesPer100g: 200, fatPer100g: 10, carbsPer100g: 5 });
+    const r = computeServing(f, 500); // serving = 250 g, scale 2.5
+    expect(r.fat).toBeCloseTo(25, 6);
+    expect(r.carbs).toBeCloseTo(12.5, 6);
     expect(r.fluidOunces).toBeNull();
   });
 
-  it("converts grams to weight ounces", () => {
-    const r = computeServing(chicken, 40);
-    expect(r.ounces).toBeCloseTo(177.7778 / 28.3495, 4);
-  });
-
-  it("flags impractical solids above the 750 g threshold", () => {
-    const lean = food({ id: "lean", proteinPer100g: 5 }); // 40g needs 800g
-    expect(computeServing(lean, 40).isImpractical).toBe(true);
-    expect(computeServing(chicken, 40).isImpractical).toBe(false);
+  it("converts liquids to fluid ounces via density", () => {
+    const f = food({ id: "milk", caloriesPer100g: 50, isLiquid: true, densityGPerMl: 1.0 });
+    const r = computeServing(f, 500); // serving = 1000 g
+    expect(r.fluidOunces).toBeCloseTo(1000 / 1.0 / 29.5735, 3);
   });
 });
 
-describe("computeServing — liquids", () => {
-  const skimMilk = food({
-    id: "skim-milk",
-    proteinPer100g: 3.4,
-    isLiquid: true,
-    densityGPerMl: 1.035,
+describe("density score (§C1)", () => {
+  it("sums %DV across tracked nutrients at the serving", () => {
+    // scale 5 at ceiling 500. iron 1.8→9mg=50%DV(18), zinc 1.1→5.5mg=50%DV(11)
+    const f = food({ id: "f", caloriesPer100g: 100, micros: { ironMg: 1.8, zincMg: 1.1 } });
+    const r = computeServing(f, 500);
+    expect(r.densityScore).toBeCloseTo(100, 4); // 50 + 50
   });
 
-  it("converts to fluid ounces using density", () => {
-    const r = computeServing(skimMilk, 40);
-    // grams = 100*40/3.4 = 1176.47; mL = grams/1.035; floz = mL/29.5735
-    const expected = 1176.4706 / 1.035 / 29.5735;
-    expect(r.fluidOunces).toBeCloseTo(expected, 3);
-  });
-
-  it("flags impractical liquids above the 24 fl oz threshold", () => {
-    // ~38 fl oz to hit 40 g from skim milk
-    expect(computeServing(skimMilk, 40).isImpractical).toBe(true);
+  it("caps each nutrient at NUTRIENT_CAP (100) so none dominates", () => {
+    // iron 7.2→36mg=200%DV → capped to 100; zinc 1.1→50% → total 150
+    const f = food({ id: "f", caloriesPer100g: 100, micros: { ironMg: 7.2, zincMg: 1.1 } });
+    const r = computeServing(f, 500);
+    expect(r.densityScore).toBeCloseTo(150, 4);
   });
 });
 
-describe("sorting", () => {
-  const a = food({ id: "a", proteinPer100g: 20, caloriesPer100g: 100, carbsPer100g: 5 });
-  const b = food({ id: "b", proteinPer100g: 20, caloriesPer100g: 100, carbsPer100g: 2 });
-  const c = food({ id: "c", proteinPer100g: 20, caloriesPer100g: 80, carbsPer100g: 9 });
-
-  it("defaults to calories asc, then carbs asc as tiebreak (spec §8)", () => {
-    const ordered = buildResults([a, b, c], 40).map((r) => r.food.id);
-    // c has fewest calories; a and b tie on calories so carbs breaks the tie (b<a)
-    expect(ordered).toEqual(["c", "b", "a"]);
+describe("highlights + omega-3 (§C2/§B3)", () => {
+  it("flags 'high in' (≥20% DV) sorted by %DV desc", () => {
+    const f = food({ id: "f", caloriesPer100g: 100, micros: { ironMg: 1.8, zincMg: 0.33 } });
+    // iron 50% (high in), zinc 0.33→1.65mg=15% (good source)
+    const r = computeServing(f, 500);
+    expect(r.highlights.map((h) => h.key)).toEqual(["iron"]);
+    expect(r.goodSources.map((g) => g.key)).toEqual(["zinc"]);
   });
 
-  it("can re-sort by a chosen column and direction", () => {
-    const results = buildResults([a, b, c], 40);
-    const byCarbsDesc = sortResults(results, "carbs", "desc").map((r) => r.food.id);
-    expect(byCarbsDesc).toEqual(["c", "a", "b"]);
+  it("marks omega-3 sources against the non-DV reference", () => {
+    const seafood = food({ id: "fish", caloriesPer100g: 100, micros: { omega3Mg: 100 } });
+    const r = computeServing(seafood, 500); // 100 * 5 = 500 mg ≥ 250
+    expect(r.isOmega3Source).toBe(true);
+    expect(r.omega3Mg).toBeCloseTo(500, 6);
   });
 });
 
-describe("parseTarget", () => {
-  it("accepts positive numbers", () => {
-    expect(parseTarget("40")).toEqual({ ok: true, value: 40 });
-    expect(parseTarget("  33.5 ")).toEqual({ ok: true, value: 33.5 });
+describe("flags", () => {
+  it("belowProteinFloor when protein delivered < 30 g (§C4)", () => {
+    const lean = food({ id: "lean", caloriesPer100g: 100, proteinPer100g: 4 }); // 20 g
+    const rich = food({ id: "rich", caloriesPer100g: 100, proteinPer100g: 20 }); // 100 g
+    expect(computeServing(lean, 500).belowProteinFloor).toBe(true);
+    expect(computeServing(rich, 500).belowProteinFloor).toBe(false);
   });
-  it("rejects empty, non-numeric, zero and negative", () => {
-    expect(parseTarget("").ok).toBe(false);
-    expect(parseTarget("abc").ok).toBe(false);
-    expect(parseTarget("0").ok).toBe(false);
-    expect(parseTarget("-5").ok).toBe(false);
+
+  it("isLargePortion for very low-calorie foods (§C5)", () => {
+    const light = food({ id: "light", caloriesPer100g: 30 }); // serving ~1667 g
+    expect(computeServing(light, 500).isLargePortion).toBe(true);
+    expect(computeServing(food({ id: "dense", caloriesPer100g: 100 }), 500).isLargePortion).toBe(
+      false,
+    );
+  });
+});
+
+describe("sorting (§C3)", () => {
+  it("defaults to density descending", () => {
+    const a = food({ id: "a", caloriesPer100g: 100, micros: { ironMg: 1.8 } }); // 50
+    const b = food({ id: "b", caloriesPer100g: 100, micros: { ironMg: 3.6 } }); // 100
+    const c = food({ id: "c", caloriesPer100g: 100, micros: { ironMg: 0.9 } }); // 25
+    expect(buildResults([a, b, c], 500).map((r) => r.food.id)).toEqual(["b", "a", "c"]);
+  });
+
+  it("can re-sort by protein delivered ascending", () => {
+    const a = food({ id: "a", caloriesPer100g: 100, proteinPer100g: 10 });
+    const b = food({ id: "b", caloriesPer100g: 100, proteinPer100g: 30 });
+    const results = buildResults([a, b], 500);
+    expect(sortResults(results, "protein", "asc").map((r) => r.food.id)).toEqual(["a", "b"]);
+  });
+});
+
+describe("parseCeiling / parsePeople", () => {
+  it("accepts positive ceilings", () => {
+    expect(parseCeiling("500")).toEqual({ ok: true, value: 500 });
+  });
+  it("rejects empty, non-numeric, zero, negative", () => {
+    expect(parseCeiling("").ok).toBe(false);
+    expect(parseCeiling("abc").ok).toBe(false);
+    expect(parseCeiling("0").ok).toBe(false);
+    expect(parseCeiling("-5").ok).toBe(false);
+  });
+  it("clamps people to a whole number ≥ 1", () => {
+    expect(parsePeople("2")).toBe(2);
+    expect(parsePeople(0)).toBe(1);
+    expect(parsePeople("abc")).toBe(1);
+    expect(parsePeople(2.9)).toBe(2);
   });
 });
 
 describe("validateDataset", () => {
+  const good = food({ id: "good", micros: { ironMg: 1 } });
   it("passes a valid dataset", () => {
-    expect(() => validateDataset([chicken])).not.toThrow();
+    expect(() => validateDataset([good])).not.toThrow();
   });
-  it("throws when a liquid is missing densityGPerMl (spec §10)", () => {
-    const badLiquid = food({ id: "bad", proteinPer100g: 3, isLiquid: true });
-    expect(() => validateDataset([badLiquid])).toThrow(/densityGPerMl/);
+  it("throws when caloriesPer100g is not > 0 (§A)", () => {
+    expect(() => validateDataset([food({ id: "z", caloriesPer100g: 0 })])).toThrow(
+      /caloriesPer100g/,
+    );
+  });
+  it("throws when a liquid is missing densityGPerMl (§10)", () => {
+    expect(() =>
+      validateDataset([food({ id: "l", isLiquid: true })]),
+    ).toThrow(/densityGPerMl/);
   });
   it("throws on duplicate ids", () => {
-    expect(() => validateDataset([chicken, chicken])).toThrow(/duplicate/i);
+    expect(() => validateDataset([good, good])).toThrow(/duplicate/i);
   });
-  it("throws on non-positive protein", () => {
-    const zero = food({ id: "zero", proteinPer100g: 0 });
-    expect(() => validateDataset([zero])).toThrow(/proteinPer100g/);
+  it("throws when a micros field is missing/non-numeric", () => {
+    const bad = food({ id: "bad" });
+    // @ts-expect-error deliberately break the micros block
+    bad.micros.ironMg = undefined;
+    expect(() => validateDataset([bad])).toThrow(/micros\.ironMg/);
   });
 });
