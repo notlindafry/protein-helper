@@ -59,7 +59,7 @@ export default function InstallPwa() {
         await e.prompt();
         await e.userChoice.catch(() => undefined);
       }}
-      className="inline-flex shrink-0 items-center gap-1.5 rounded-[var(--radius)] border border-[var(--accent)] bg-[var(--accent-dim)] px-3.5 py-2 text-sm font-medium text-[var(--accent)] transition-colors hover:bg-[var(--surface-hover)] hover:text-[var(--text-strong)]"
+      className="inline-flex shrink-0 items-center gap-1.5 rounded-[var(--radius-sm)] border border-[var(--accent)] bg-[var(--accent-dim)] px-3.5 py-2 font-medium text-[var(--accent)] transition-colors hover:bg-[var(--surface-hover)] hover:text-[var(--text-strong)]"
     >
       <span aria-hidden="true">↓</span>
       Install app

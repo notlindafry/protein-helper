@@ -30,7 +30,7 @@
 
   --radius: 12px;
   --radius-sm: 8px;
-  --maxw: 1120px;
+  --maxw: 1000px;
 
   --font-display: "Space Grotesk", system-ui, sans-serif;
   --font-body: "Inter", system-ui, sans-serif;
@@ -49,6 +49,23 @@
     font-feature-settings: "tnum" 1; /* tabular figures keep the numeric columns aligned */
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
+    /* Top rule (spec §6): a 3px full-bleed sage line at the very top of every
+       page, implemented as a top border on `body` — not a separate element. */
+    border-top: 3px solid var(--accent);
+  }
+
+  /* One input size for every app: 15px (spec §6). Buttons match. Individual
+     controls may still opt down to a smaller utility size where the layout
+     calls for it (e.g. the small table sort headers). */
+  input,
+  button {
+    font-size: 15px;
+  }
+
+  /* Placeholders use the faintest text tone (spec §6); they inherit the input
+     font-size, so no size is set here. */
+  input::placeholder {
+    color: var(--text-faint);
   }
 
   h1,
@@ -90,16 +107,5 @@
   /* The hyphen in the wordmark, tinted with the sage accent. */
   .dash {
     color: var(--accent);
-  }
-
-  /* Sage accent line across the very top of the screen (matches the shared
-     vibe-shelf / cookbook-library design). Fixed so it hugs the top on scroll;
-     in the installed PWA it sits just below the status bar. */
-  .top-accent {
-    position: fixed;
-    inset: 0 0 auto 0; /* top / right / bottom:auto / left */
-    height: 3px;
-    background: var(--accent);
-    z-index: 50;
   }
 }

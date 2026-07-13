@@ -120,7 +120,7 @@ export default function ResultsTable({
                       <button
                         type="button"
                         onClick={() => onSort(col.key as SortKey)}
-                        className={`inline-flex items-center rounded-[var(--radius-sm)] px-1 py-0.5 transition-colors hover:text-[var(--text-strong)] ${
+                        className={`inline-flex items-center rounded-[var(--radius-sm)] px-1 py-0.5 text-xs transition-colors hover:text-[var(--text-strong)] ${
                           active ? "text-[var(--text-strong)]" : ""
                         } ${col.align === "right" ? "flex-row-reverse" : ""}`}
                       >
@@ -179,7 +179,7 @@ export default function ResultsTable({
             <div className="flex items-start justify-between gap-3">
               <FoodName result={r} />
               <div className="flex shrink-0 flex-col items-end">
-                <span className="text-[10px] uppercase tracking-wide text-[var(--text-muted)]">
+                <span className="text-[10.5px] font-semibold uppercase tracking-[0.07em] text-[var(--accent)]">
                   density
                 </span>
                 <span className="tabular-nums text-lg font-medium text-[var(--accent)]">
