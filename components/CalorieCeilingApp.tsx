@@ -5,7 +5,6 @@ import {
   buildResults,
   buildMatches,
   parseCeiling,
-  parsePeople,
   parseProteinTarget,
   DEFAULT_SORT_KEY,
   DEFAULT_SORT_DIR,
@@ -34,12 +33,10 @@ export default function CalorieCeilingApp() {
   const [rawCeiling, setRawCeiling] = useState(INITIAL_CEILING);
   const [submittedCeiling, setSubmittedCeiling] = useState(INITIAL_CEILING);
   const [proteinTargetRaw, setProteinTargetRaw] = useState("");
-  const [peopleRaw, setPeopleRaw] = useState("1");
   const [sortKey, setSortKey] = useState<SortKey>(DEFAULT_SORT_KEY);
   const [sortDir, setSortDir] = useState<SortDir>(DEFAULT_SORT_DIR);
 
   const parsed = useMemo(() => parseCeiling(submittedCeiling), [submittedCeiling]);
-  const people = parsePeople(peopleRaw);
   const proteinTarget = parseProteinTarget(proteinTargetRaw);
   const banded = proteinTarget > 0;
 
@@ -130,27 +127,6 @@ export default function CalorieCeilingApp() {
             </div>
           </div>
 
-          <div className="flex w-24 flex-col gap-2">
-            <label
-              htmlFor="people"
-              className="text-sm font-medium text-[var(--text-muted)]"
-            >
-              People
-            </label>
-            <input
-              id="people"
-              name="people"
-              type="number"
-              inputMode="numeric"
-              min={1}
-              step={1}
-              autoComplete="off"
-              value={peopleRaw}
-              onChange={(e) => setPeopleRaw(e.target.value)}
-              className="w-full rounded-[var(--radius)] border border-[var(--border-strong)] bg-[var(--surface)] px-4 py-3 font-display text-3xl text-[var(--text-strong)] outline-none transition-colors focus:border-[var(--accent)]"
-            />
-          </div>
-
           <button
             type="submit"
             className="rounded-[var(--radius)] border border-[var(--accent)] bg-[var(--accent)] px-6 py-3 font-medium text-[var(--accent-ink)] transition-colors hover:bg-[var(--surface-hover)] hover:text-[var(--text-strong)]"
@@ -204,9 +180,6 @@ export default function CalorieCeilingApp() {
                 </strong>
               </>
             )}
-            {people > 1 ? (
-              <span className="text-[var(--text-muted)]"> (×{people} people)</span>
-            ) : null}
             , sorted by {SORT_LABEL[sortKey]}.
             {banded ? (
               <span className="text-[var(--text-muted)]">
@@ -225,7 +198,6 @@ export default function CalorieCeilingApp() {
           ) : (
             <ResultsTable
               results={results}
-              people={people}
               sortKey={sortKey}
               sortDir={sortDir}
               onSort={handleSort}

@@ -257,13 +257,6 @@ export function parseCeiling(raw: string): ParsedCeiling {
   return { ok: true, value };
 }
 
-// Optional "number of people" field (spec §D). Defaults to 1 on any bad input.
-export function parsePeople(raw: string | number): number {
-  const value = typeof raw === "number" ? raw : Number(String(raw).trim());
-  if (!Number.isFinite(value) || value < 1) return 1;
-  return Math.floor(value);
-}
-
 // Optional protein target (grams). 0 = off. When set, it switches the calorie field
 // from an exact anchor into a two-target band search (see matchServingGrams): only
 // foods whose serving lands within ±tol of both targets are shown.

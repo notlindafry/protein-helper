@@ -8,7 +8,6 @@ import {
   matchServingGrams,
   sortResults,
   parseCeiling,
-  parsePeople,
   parseProteinTarget,
   validateDataset,
 } from "./compute";
@@ -148,7 +147,7 @@ describe("sorting (§C3)", () => {
   });
 });
 
-describe("parseCeiling / parsePeople", () => {
+describe("parseCeiling / parseProteinTarget", () => {
   it("accepts positive ceilings", () => {
     expect(parseCeiling("500")).toEqual({ ok: true, value: 500 });
   });
@@ -157,12 +156,6 @@ describe("parseCeiling / parsePeople", () => {
     expect(parseCeiling("abc").ok).toBe(false);
     expect(parseCeiling("0").ok).toBe(false);
     expect(parseCeiling("-5").ok).toBe(false);
-  });
-  it("clamps people to a whole number ≥ 1", () => {
-    expect(parsePeople("2")).toBe(2);
-    expect(parsePeople(0)).toBe(1);
-    expect(parsePeople("abc")).toBe(1);
-    expect(parsePeople(2.9)).toBe(2);
   });
   it("protein target: blank/0/negative = off, else the value", () => {
     expect(parseProteinTarget("")).toBe(0);

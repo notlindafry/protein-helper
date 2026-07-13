@@ -157,8 +157,6 @@ works for the authenticated user.
    (`matchServingGrams`). Because calories and protein scale together per food, this
    filters by protein-per-calorie ratio and uses the calorie slack to catch near-misses.
    The fixed 30 g `DINNER_PROTEIN_FLOOR` flag still marks low-protein rows.
-5. **People field:** included — optional count (default 1) shows a `×people` total
-   alongside the per-person serving.
 
 ## Project structure
 
@@ -168,7 +166,7 @@ app/
   layout.tsx         fonts (next/font), metadata, themeColor
   page.tsx           page shell + provenance footer
 components/
-  CalorieCeilingApp.tsx ceiling + people input, validation, summary, sort state
+  CalorieCeilingApp.tsx calorie + protein-target input, validation, summary, sort
   ResultsTable.tsx      density-sorted table (desktop) / cards (mobile)
   Badges.tsx            basis, complete-protein, rich-in, protein-floor, large-portion
   Legend.tsx            always-visible key (density, rich-in, badges)

@@ -57,7 +57,7 @@ function FoodName({ result }: { result: ServingResult }) {
   );
 }
 
-function ServingCell({ result, people }: { result: ServingResult; people: number }) {
+function ServingCell({ result }: { result: ServingResult }) {
   return (
     <div className="flex flex-col items-end gap-0.5">
       <span className="tabular-nums text-[var(--text)]">
@@ -66,11 +66,6 @@ function ServingCell({ result, people }: { result: ServingResult; people: number
       <span className="text-xs tabular-nums text-[var(--text-muted)]">
         {formatCalories(result.calories)} cal · {formatServingSecondary(result)}
       </span>
-      {people > 1 ? (
-        <span className="text-xs tabular-nums text-[var(--text-faint)]">
-          ×{people} = {formatGrams(result.servingGrams * people)} g
-        </span>
-      ) : null}
       {result.isLargePortion ? <LargePortionNote /> : null}
     </div>
   );
@@ -89,13 +84,11 @@ function ProteinCell({ result }: { result: ServingResult }) {
 
 export default function ResultsTable({
   results,
-  people,
   sortKey,
   sortDir,
   onSort,
 }: {
   results: ServingResult[];
-  people: number;
   sortKey: SortKey;
   sortDir: SortDir;
   onSort: (key: SortKey) => void;
@@ -150,7 +143,7 @@ export default function ResultsTable({
                   <FoodName result={r} />
                 </td>
                 <td className="px-3 py-3 align-top">
-                  <ServingCell result={r} people={people} />
+                  <ServingCell result={r} />
                 </td>
                 <td className="px-3 py-3 align-top">
                   <ProteinCell result={r} />
@@ -199,7 +192,7 @@ export default function ResultsTable({
               <div className="flex items-baseline justify-between gap-2">
                 <dt className="text-xs text-[var(--text-muted)]">Serving</dt>
                 <dd className="text-right">
-                  <ServingCell result={r} people={people} />
+                  <ServingCell result={r} />
                 </dd>
               </div>
               <div className="flex items-baseline justify-between gap-2">
