@@ -55,7 +55,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={`${display.variable} ${body.variable}`}>
-      <body>{children}</body>
+      <body>
+        <div className="top-accent" aria-hidden="true" />
+        {children}
+      </body>
     </html>
   );
 }

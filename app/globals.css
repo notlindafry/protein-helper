@@ -91,4 +91,15 @@
   .dash {
     color: var(--accent);
   }
+
+  /* Sage accent line across the very top of the screen (matches the shared
+     vibe-shelf / cookbook-library design). Fixed so it hugs the top on scroll;
+     in the installed PWA it sits just below the status bar. */
+  .top-accent {
+    position: fixed;
+    inset: 0 0 auto 0; /* top / right / bottom:auto / left */
+    height: 3px;
+    background: var(--accent);
+    z-index: 50;
+  }
 }
