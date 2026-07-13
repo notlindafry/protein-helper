@@ -105,11 +105,11 @@ export default function CalorieCeilingApp() {
                 placeholder="any"
                 value={proteinRaw}
                 onChange={(e) => setProteinRaw(e.target.value)}
-                className="w-full rounded-[var(--radius)] border border-[var(--border-strong)] bg-[var(--surface)] px-4 py-3 pr-9 font-display text-3xl text-[var(--text-strong)] outline-none transition-colors focus:border-[var(--accent)]"
+                className="w-full rounded-[var(--radius-sm)] border border-[var(--border-strong)] bg-[var(--surface)] px-4 py-3 pr-9 text-[15px] text-[var(--text-strong)] outline-none transition-colors focus:border-[var(--accent)] focus:shadow-[0_0_0_3px_var(--accent-dim)]"
               />
               <span
                 aria-hidden="true"
-                className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-lg text-[var(--text-faint)]"
+                className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-sm text-[var(--text-faint)]"
               >
                 g
               </span>
@@ -136,11 +136,11 @@ export default function CalorieCeilingApp() {
                 placeholder="any"
                 value={calorieRaw}
                 onChange={(e) => setCalorieRaw(e.target.value)}
-                className="w-full rounded-[var(--radius)] border border-[var(--border-strong)] bg-[var(--surface)] px-4 py-3 pr-14 font-display text-3xl text-[var(--text-strong)] outline-none transition-colors focus:border-[var(--accent)]"
+                className="w-full rounded-[var(--radius-sm)] border border-[var(--border-strong)] bg-[var(--surface)] px-4 py-3 pr-14 text-[15px] text-[var(--text-strong)] outline-none transition-colors focus:border-[var(--accent)] focus:shadow-[0_0_0_3px_var(--accent-dim)]"
               />
               <span
                 aria-hidden="true"
-                className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-lg text-[var(--text-faint)]"
+                className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-sm text-[var(--text-faint)]"
               >
                 cal
               </span>

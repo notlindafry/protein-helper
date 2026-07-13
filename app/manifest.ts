@@ -7,7 +7,7 @@ import type { MetadataRoute } from "next";
 export default function manifest(): MetadataRoute.Manifest {
   return {
     id: "/",
-    name: "gains-helper",
+    name: "gains-helper — protein macro picker",
     short_name: "gains-helper",
     description:
       "Enter a protein goal and see each food scaled to the serving that hits it on its own.",
@@ -19,8 +19,9 @@ export default function manifest(): MetadataRoute.Manifest {
     theme_color: "#0f120d",
     categories: ["health", "food", "utilities"],
     icons: [
+      // Four PNG entries (spec §7): icon-192 and icon-512, each declared once
+      // "any" and once "maskable".
       // "any" — used as the app icon where the platform does not mask.
-      { src: "/icons/icon.svg", sizes: "any", type: "image/svg+xml", purpose: "any" },
       { src: "/icons/icon-192.png", sizes: "192x192", type: "image/png", purpose: "any" },
       { src: "/icons/icon-512.png", sizes: "512x512", type: "image/png", purpose: "any" },
       // "maskable" — Android adaptive icons. The artwork keeps its subject inside
