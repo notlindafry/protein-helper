@@ -62,6 +62,29 @@ FDC_API_KEY=your_key npm run build:data -- --write # emit lib/foods.generated.ts
 `FDC_API_KEY` is **build-time only** — used solely by this script, never imported by the
 app, never shipped. See [`.env.example`](.env.example).
 
+## Installable app (PWA)
+
+The app is an installable Progressive Web App, tuned for Android (primary audience):
+
+- **Web app manifest** at `/manifest.webmanifest` (`app/manifest.ts`): standalone
+  display, `#0f120d` theme/splash, and icons at 192/512 with both `any` and
+  **`maskable`** purposes — the flexed-arm artwork stays inside the safe zone, so
+  Android adaptive (circle/squircle) masks don't clip it.
+- **Icons** live in `public/icons/` (`icon-192.png`, `icon-512.png`,
+  `apple-touch-icon.png`, scalable `icon.svg`); favicon + apple-touch links are set
+  in `app/layout.tsx`.
+- **Service worker** (`public/sw.js`, registered by `components/InstallPwa.tsx`):
+  a fetch handler (required for Chrome/Android installability) plus network-first
+  navigation and stale-while-revalidate asset caching for basic offline use.
+- **Install button** — `components/InstallPwa.tsx` captures `beforeinstallprompt`
+  and shows an "Install app" button in the header on eligible devices; it hides
+  once installed. Android users can also install from the browser's ⋮ menu → *Add
+  to Home screen*.
+
+Note: with Vercel Password Protection on, the manifest/icons are fetched with
+credentials (the manifest link is `crossorigin="use-credentials"`), so install
+works for the authenticated user.
+
 ## Deploy to Vercel
 
 1. Import the repo into Vercel (Framework preset: **Next.js**). No build config needed.

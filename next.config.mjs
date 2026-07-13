@@ -24,6 +24,11 @@ const csp = [
   "style-src 'self' 'unsafe-inline'",
   "script-src 'self' 'unsafe-inline'",
   "connect-src 'self'",
+  // PWA: the service worker (public/sw.js) and the web app manifest are both
+  // same-origin. worker-src / manifest-src are set explicitly rather than relying
+  // on the default-src fallback.
+  "worker-src 'self'",
+  "manifest-src 'self'",
   "upgrade-insecure-requests",
 ].join("; ");
 
