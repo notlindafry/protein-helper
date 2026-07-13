@@ -13,6 +13,11 @@ export const NUTRIENT_CAP = 100;
 // Optional "below dinner protein" flag (spec §C4). Tunable.
 export const DINNER_PROTEIN_FLOOR = 30; // g of protein delivered at the ceiling
 
+// Two-target band search: when a protein target is set alongside the calorie target,
+// a food matches only if a single serving lands within ±SEARCH_TOLERANCE of BOTH
+// (e.g. 500 cal & 50 g → 450–550 cal and 45–55 g). Tunable.
+export const SEARCH_TOLERANCE = 0.1; // ±10%
+
 // FDA labeling thresholds on %DV (spec §C2), used for the "rich in" highlights.
 export const HIGH_IN_PCT = 20; // "high in"
 export const GOOD_SOURCE_PCT = 10; // "good source" (10–19%)

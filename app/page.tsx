@@ -13,11 +13,10 @@ export default function Page() {
           <InstallPwa />
         </div>
         <p className="max-w-2xl text-[var(--text-muted)]">
-          Set a per-person calorie ceiling for dinner. Each row is one protein
-          scaled to the serving that spends that ceiling — ranked by the protein
-          it delivers, with a micronutrient-density score alongside as a secondary
-          read. Tap any column to re-sort. Pick a row; portion down from the
-          serving shown.
+          Set a per-person calorie target for dinner — add a protein target to
+          find servings that fit both within ±10%. Each row is one protein, ranked
+          by the protein it delivers with a micronutrient-density score alongside.
+          Tap any column to re-sort; portion from the serving shown.
         </p>
       </header>
 

@@ -2,11 +2,14 @@ import { describe, it, expect } from "vitest";
 import type { Food, Micronutrients } from "./types";
 import {
   computeServing,
+  computeServingAtGrams,
   buildResults,
+  buildMatches,
+  matchServingGrams,
   sortResults,
   parseCeiling,
   parsePeople,
-  parseMinProtein,
+  parseProteinTarget,
   validateDataset,
 } from "./compute";
 import { GRAMS_PER_OUNCE } from "./constants";
@@ -161,13 +164,48 @@ describe("parseCeiling / parsePeople", () => {
     expect(parsePeople("abc")).toBe(1);
     expect(parsePeople(2.9)).toBe(2);
   });
-  it("min protein: blank/0/negative = off, else the value", () => {
-    expect(parseMinProtein("")).toBe(0);
-    expect(parseMinProtein("0")).toBe(0);
-    expect(parseMinProtein("-3")).toBe(0);
-    expect(parseMinProtein("abc")).toBe(0);
-    expect(parseMinProtein("40")).toBe(40);
-    expect(parseMinProtein("32.5")).toBe(32.5);
+  it("protein target: blank/0/negative = off, else the value", () => {
+    expect(parseProteinTarget("")).toBe(0);
+    expect(parseProteinTarget("0")).toBe(0);
+    expect(parseProteinTarget("-3")).toBe(0);
+    expect(parseProteinTarget("abc")).toBe(0);
+    expect(parseProteinTarget("50")).toBe(50);
+    expect(parseProteinTarget("32.5")).toBe(32.5);
+  });
+});
+
+describe("two-target band search (±10%)", () => {
+  it("matches an exact-ratio food at the protein target", () => {
+    // ratio 10 g / 100 cal == target 50/500; serving hits both exactly
+    const f = food({ id: "f", caloriesPer100g: 100, proteinPer100g: 10 });
+    const g = matchServingGrams(f, 500, 50, 0.1);
+    expect(g).toBeCloseTo(500, 6);
+    const r = computeServingAtGrams(f, g as number);
+    expect(r.proteinDelivered).toBeCloseTo(50, 6);
+    expect(r.calories).toBeCloseTo(500, 6);
+  });
+
+  it("uses calorie slack to still match a slightly protein-dense food", () => {
+    // 55 g protein at 500 cal (top of protein band); trims serving to center protein
+    const f = food({ id: "f", caloriesPer100g: 100, proteinPer100g: 11 });
+    const g = matchServingGrams(f, 500, 50, 0.1);
+    expect(g).not.toBeNull();
+    const r = computeServingAtGrams(f, g as number);
+    expect(r.proteinDelivered).toBeGreaterThanOrEqual(45);
+    expect(r.proteinDelivered).toBeLessThanOrEqual(55);
+    expect(r.calories).toBeGreaterThanOrEqual(450);
+    expect(r.calories).toBeLessThanOrEqual(550);
+  });
+
+  it("rejects a food that cannot hit both bands", () => {
+    const lean = food({ id: "lean", caloriesPer100g: 100, proteinPer100g: 5 }); // ratio too low
+    expect(matchServingGrams(lean, 500, 50, 0.1)).toBeNull();
+  });
+
+  it("buildMatches keeps only matching foods", () => {
+    const a = food({ id: "a", caloriesPer100g: 100, proteinPer100g: 10 }); // matches
+    const b = food({ id: "b", caloriesPer100g: 100, proteinPer100g: 5 }); // no
+    expect(buildMatches([a, b], 500, 50, 0.1).map((r) => r.food.id)).toEqual(["a"]);
   });
 });
 

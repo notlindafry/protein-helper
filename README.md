@@ -1,10 +1,13 @@
 # gains-helper
 
 Dinner portion-and-nutrient reference (revision v2). Set a **per-person calorie
-ceiling** (e.g. `500`) and every row is **one protein scaled to the serving that spends
-that ceiling** — showing the protein it delivers, its macros, and its micronutrient
-value, **sorted by micronutrient density**. Results are intentionally static; variety
-comes from choosing different rows, then portioning down from the serving shown.
+target** (e.g. `500`); every row is **one protein scaled to a serving at that target**,
+showing the protein it delivers, its macros, and its micronutrient value, **ranked by
+protein delivered** with a micronutrient-density score alongside. Add a **protein
+target** and it becomes a **two-target search**: only foods whose serving fits **both**
+the calorie and protein targets within **±10%** are shown (e.g. 500 cal & 50 g →
+450–550 cal and 45–55 g). Results are intentionally static; variety comes from choosing
+different rows, then portioning from the serving shown.
 
 This is **not** a meal builder: no running total, no stacking, no persistence — still
 stateless and fully client-side over baked-in data (no runtime API, no tokens).
@@ -147,10 +150,13 @@ works for the authenticated user.
    ties and is one click away as its own column). Headers re-sort.
 3. **Weight basis:** per-category (raw meat/fish, cooked legumes/grains, as-sold
    dairy/eggs/tofu/powder), shown as a small basis label on each row.
-4. **Protein:** a **Min-protein filter** shows only servings that deliver at least the
-   entered grams at the ceiling (e.g. 500-cal servings with ≥ 40 g protein); blank = off.
-   The fixed 30 g `DINNER_PROTEIN_FLOOR` flag still marks low-protein rows when no
-   minimum is set.
+4. **Protein target → two-target band search:** a protein target (blank = off) switches
+   the calorie field from an exact anchor into a ±10% (`SEARCH_TOLERANCE`) search over
+   both axes — only foods whose serving lands within ±10% of *both* targets are shown,
+   each at the serving that best hits the protein target inside the feasible overlap
+   (`matchServingGrams`). Because calories and protein scale together per food, this
+   filters by protein-per-calorie ratio and uses the calorie slack to catch near-misses.
+   The fixed 30 g `DINNER_PROTEIN_FLOOR` flag still marks low-protein rows.
 5. **People field:** included — optional count (default 1) shows a `×people` total
    alongside the per-person serving.
 

@@ -3,6 +3,7 @@
 import type { ServingResult, SortKey, SortDir } from "@/lib/compute";
 import {
   formatGrams,
+  formatCalories,
   formatMacro,
   formatDensity,
   formatServingSecondary,
@@ -63,7 +64,7 @@ function ServingCell({ result, people }: { result: ServingResult; people: number
         {formatGrams(result.servingGrams)} g
       </span>
       <span className="text-xs tabular-nums text-[var(--text-muted)]">
-        {formatServingSecondary(result)}
+        {formatCalories(result.calories)} cal · {formatServingSecondary(result)}
       </span>
       {people > 1 ? (
         <span className="text-xs tabular-nums text-[var(--text-faint)]">

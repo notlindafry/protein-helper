@@ -3,14 +3,16 @@
 import { useMemo, useState } from "react";
 import {
   buildResults,
+  buildMatches,
   parseCeiling,
   parsePeople,
-  parseMinProtein,
+  parseProteinTarget,
   DEFAULT_SORT_KEY,
   DEFAULT_SORT_DIR,
   type SortKey,
   type SortDir,
 } from "@/lib/compute";
+import { SEARCH_TOLERANCE } from "@/lib/constants";
 import { FOODS } from "@/lib/foods";
 import ResultsTable from "./ResultsTable";
 import Legend from "./Legend";
@@ -26,31 +28,27 @@ const SORT_LABEL: Record<SortKey, string> = {
 };
 
 const INITIAL_CEILING = "500";
+const TOL_PCT = Math.round(SEARCH_TOLERANCE * 100);
 
 export default function CalorieCeilingApp() {
   const [rawCeiling, setRawCeiling] = useState(INITIAL_CEILING);
   const [submittedCeiling, setSubmittedCeiling] = useState(INITIAL_CEILING);
-  const [minProteinRaw, setMinProteinRaw] = useState("");
+  const [proteinTargetRaw, setProteinTargetRaw] = useState("");
   const [peopleRaw, setPeopleRaw] = useState("1");
   const [sortKey, setSortKey] = useState<SortKey>(DEFAULT_SORT_KEY);
   const [sortDir, setSortDir] = useState<SortDir>(DEFAULT_SORT_DIR);
 
   const parsed = useMemo(() => parseCeiling(submittedCeiling), [submittedCeiling]);
   const people = parsePeople(peopleRaw);
-  const minProtein = parseMinProtein(minProteinRaw);
+  const proteinTarget = parseProteinTarget(proteinTargetRaw);
+  const banded = proteinTarget > 0;
 
-  const allResults = useMemo(
-    () => (parsed.ok ? buildResults(FOODS, parsed.value, sortKey, sortDir) : []),
-    [parsed, sortKey, sortDir],
-  );
-  // Filter to servings that deliver at least the requested protein (0 = show all).
-  const results = useMemo(
-    () =>
-      minProtein > 0
-        ? allResults.filter((r) => r.proteinDelivered >= minProtein)
-        : allResults,
-    [allResults, minProtein],
-  );
+  const results = useMemo(() => {
+    if (!parsed.ok) return [];
+    return banded
+      ? buildMatches(FOODS, parsed.value, proteinTarget, SEARCH_TOLERANCE, sortKey, sortDir)
+      : buildResults(FOODS, parsed.value, sortKey, sortDir);
+  }, [parsed, banded, proteinTarget, sortKey, sortDir]);
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -62,7 +60,6 @@ export default function CalorieCeilingApp() {
       setSortDir((d) => (d === "asc" ? "desc" : "asc"));
     } else {
       setSortKey(key);
-      // Density/serving/protein/macros read best high→low first; name low→high.
       setSortDir(key === "food" ? "asc" : "desc");
     }
   }
@@ -73,15 +70,15 @@ export default function CalorieCeilingApp() {
         <div className="flex flex-wrap items-end gap-4">
           <div className="flex flex-1 basis-48 flex-col gap-2">
             <label
-              htmlFor="calorie-ceiling"
+              htmlFor="calorie-target"
               className="text-sm font-medium text-[var(--text-muted)]"
             >
-              Calorie ceiling (per person)
+              Calorie target (per person)
             </label>
             <div className="relative">
               <input
-                id="calorie-ceiling"
-                name="calorie-ceiling"
+                id="calorie-target"
+                name="calorie-target"
                 type="number"
                 inputMode="numeric"
                 min={0}
@@ -91,7 +88,7 @@ export default function CalorieCeilingApp() {
                 value={rawCeiling}
                 onChange={(e) => setRawCeiling(e.target.value)}
                 aria-invalid={!parsed.ok}
-                aria-describedby={parsed.ok ? undefined : "calorie-ceiling-error"}
+                aria-describedby={parsed.ok ? undefined : "calorie-target-error"}
                 className="w-full rounded-[var(--radius)] border border-[var(--border-strong)] bg-[var(--surface)] px-4 py-3 pr-14 font-display text-3xl text-[var(--text-strong)] outline-none transition-colors focus:border-[var(--accent)]"
               />
               <span
@@ -105,23 +102,23 @@ export default function CalorieCeilingApp() {
 
           <div className="flex w-32 flex-col gap-2">
             <label
-              htmlFor="min-protein"
+              htmlFor="protein-target"
               className="text-sm font-medium text-[var(--text-muted)]"
             >
-              Min protein
+              Protein target
             </label>
             <div className="relative">
               <input
-                id="min-protein"
-                name="min-protein"
+                id="protein-target"
+                name="protein-target"
                 type="number"
                 inputMode="numeric"
                 min={0}
                 step="any"
                 autoComplete="off"
                 placeholder="any"
-                value={minProteinRaw}
-                onChange={(e) => setMinProteinRaw(e.target.value)}
+                value={proteinTargetRaw}
+                onChange={(e) => setProteinTargetRaw(e.target.value)}
                 className="w-full rounded-[var(--radius)] border border-[var(--border-strong)] bg-[var(--surface)] px-4 py-3 pr-9 font-display text-3xl text-[var(--text-strong)] outline-none transition-colors focus:border-[var(--accent)]"
               />
               <span
@@ -161,11 +158,22 @@ export default function CalorieCeilingApp() {
             Show servings
           </button>
         </div>
+        {banded ? (
+          <p className="text-xs text-[var(--text-faint)]">
+            Two-target search: only foods whose serving fits both targets within ±
+            {TOL_PCT}% are shown.
+          </p>
+        ) : (
+          <p className="text-xs text-[var(--text-faint)]">
+            Add a protein target to search for servings that fit both calories and
+            protein within ±{TOL_PCT}%.
+          </p>
+        )}
       </form>
 
       {!parsed.ok ? (
         <p
-          id="calorie-ceiling-error"
+          id="calorie-target-error"
           role="alert"
           className="text-sm text-[var(--danger)]"
         >
@@ -174,32 +182,45 @@ export default function CalorieCeilingApp() {
       ) : (
         <section className="flex flex-col gap-4">
           <p className="font-display text-lg text-[var(--text)]">
-            Per person at{" "}
-            <strong className="text-[var(--text-strong)]">{parsed.value} cal</strong>
+            Per person{" "}
+            {banded ? (
+              <>
+                near{" "}
+                <strong className="text-[var(--text-strong)]">
+                  {parsed.value} cal
+                </strong>{" "}
+                &amp;{" "}
+                <strong className="text-[var(--text-strong)]">
+                  {proteinTarget} g
+                </strong>{" "}
+                protein{" "}
+                <span className="text-[var(--text-muted)]">(±{TOL_PCT}%)</span>
+              </>
+            ) : (
+              <>
+                at{" "}
+                <strong className="text-[var(--text-strong)]">
+                  {parsed.value} cal
+                </strong>
+              </>
+            )}
             {people > 1 ? (
               <span className="text-[var(--text-muted)]"> (×{people} people)</span>
             ) : null}
-            {minProtein > 0 ? (
-              <>
-                {" "}
-                delivering{" "}
-                <strong className="text-[var(--text-strong)]">≥{minProtein} g</strong>{" "}
-                protein
-              </>
-            ) : null}
             , sorted by {SORT_LABEL[sortKey]}.
-            {minProtein > 0 ? (
+            {banded ? (
               <span className="text-[var(--text-muted)]">
                 {" "}
-                Showing {results.length} of {allResults.length}.
+                Showing {results.length} of {FOODS.length}.
               </span>
             ) : null}
           </p>
           <Legend />
           {results.length === 0 ? (
             <p className="rounded-[var(--radius)] border border-[var(--border)] bg-[var(--surface)] px-4 py-6 text-center text-[var(--text-muted)]">
-              No food delivers ≥{minProtein} g protein within {parsed.value} cal.
-              Lower the minimum or raise the ceiling.
+              No food fits {parsed.value} cal &amp; {proteinTarget} g protein within
+              ±{TOL_PCT}%. Widen a target, or clear the protein target to see all
+              foods at the calorie target.
             </p>
           ) : (
             <ResultsTable

@@ -46,10 +46,9 @@ export type ServingResult = {
   isLargePortion: boolean; // neutral note (§C5)
 };
 
-// Core computation (revision spec §A). The per-person calorie ceiling is the anchor;
-// the serving is "max at ceiling", and protein-delivered is a displayed outcome.
-export function computeServing(food: Food, ceiling: number): ServingResult {
-  const servingGrams = (ceiling * 100) / food.caloriesPer100g;
+// Compute every derived value for a food at a given serving (grams). This is the
+// shared core; callers decide the serving (calorie-anchored, or a two-target match).
+export function computeServingAtGrams(food: Food, servingGrams: number): ServingResult {
   const scale = servingGrams / 100;
 
   const proteinDelivered = food.proteinPer100g * scale;
@@ -110,6 +109,60 @@ export function computeServing(food: Food, ceiling: number): ServingResult {
     belowProteinFloor,
     isLargePortion,
   };
+}
+
+// Calorie-anchored serving (revision §A): spend the ceiling exactly. The default view.
+export function computeServing(food: Food, ceiling: number): ServingResult {
+  return computeServingAtGrams(food, (ceiling * 100) / food.caloriesPer100g);
+}
+
+// Two-target band search. Calories and protein scale together for a food, so its
+// protein-per-calorie ratio is fixed. Return the serving (grams) that lands within
+// ±tol of BOTH the calorie and protein targets, or null if no serving can — i.e. the
+// two bands don't overlap in serving space. The returned serving prefers hitting the
+// protein target (the primary), clamped into the feasible overlap so calories also
+// land in band.
+export function matchServingGrams(
+  food: Food,
+  calorieTarget: number,
+  proteinTarget: number,
+  tol: number,
+): number | null {
+  const cal100 = food.caloriesPer100g;
+  const pro100 = food.proteinPer100g;
+  if (!(cal100 > 0) || !(pro100 > 0)) return null;
+
+  // Serving-gram ranges implied by each ±tol band.
+  const gCalLo = (calorieTarget * (1 - tol) * 100) / cal100;
+  const gCalHi = (calorieTarget * (1 + tol) * 100) / cal100;
+  const gProLo = (proteinTarget * (1 - tol) * 100) / pro100;
+  const gProHi = (proteinTarget * (1 + tol) * 100) / pro100;
+
+  const lo = Math.max(gCalLo, gProLo);
+  const hi = Math.min(gCalHi, gProHi);
+  if (lo > hi) return null; // bands don't overlap → no serving fits both
+
+  const gAtProteinTarget = (proteinTarget * 100) / pro100;
+  return Math.min(Math.max(gAtProteinTarget, lo), hi);
+}
+
+// Build the sorted result set for a two-target (calorie + protein) band search:
+// only foods with a serving inside both bands, each shown at that serving.
+export function buildMatches(
+  foods: Food[],
+  calorieTarget: number,
+  proteinTarget: number,
+  tol: number,
+  key: SortKey = DEFAULT_SORT_KEY,
+  dir: SortDir = DEFAULT_SORT_DIR,
+): ServingResult[] {
+  const out: ServingResult[] = [];
+  for (const f of foods) {
+    const grams = matchServingGrams(f, calorieTarget, proteinTarget, tol);
+    if (grams == null) continue;
+    out.push(computeServingAtGrams(f, grams));
+  }
+  return sortResults(out, key, dir);
 }
 
 // Sortable columns (spec §C3). Calories are ~constant (= the ceiling) so there is no
@@ -211,10 +264,10 @@ export function parsePeople(raw: string | number): number {
   return Math.floor(value);
 }
 
-// Optional "minimum protein delivered" filter (grams). 0 = off (show everything).
-// Used to restrict the list to servings that deliver at least this much protein at
-// the calorie ceiling (e.g. "500-cal servings with ≥ 40 g protein").
-export function parseMinProtein(raw: string | number): number {
+// Optional protein target (grams). 0 = off. When set, it switches the calorie field
+// from an exact anchor into a two-target band search (see matchServingGrams): only
+// foods whose serving lands within ±tol of both targets are shown.
+export function parseProteinTarget(raw: string | number): number {
   const value = typeof raw === "number" ? raw : Number(String(raw).trim());
   if (!Number.isFinite(value) || value <= 0) return 0;
   return value;
