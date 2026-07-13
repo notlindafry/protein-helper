@@ -142,7 +142,9 @@ works for the authenticated user.
 
 1. **Auth:** Option A — Vercel Password Protection.
 2. **Anchor:** calorie-first — the ceiling is the anchor and the serving is "max at
-   ceiling" (revision §A). Default sort: micronutrient density, descending.
+   ceiling" (revision §A). **Default sort: protein delivered, descending** — protein is
+   the primary consideration; the micronutrient density score is secondary (it breaks
+   ties and is one click away as its own column). Headers re-sort.
 3. **Weight basis:** per-category (raw meat/fish, cooked legumes/grains, as-sold
    dairy/eggs/tofu/powder), shown as a small basis label on each row.
 4. **Protein floor:** included at 30 g (`DINNER_PROTEIN_FLOOR`).

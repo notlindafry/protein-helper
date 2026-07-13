@@ -124,8 +124,11 @@ export type SortKey =
   | "food";
 export type SortDir = "asc" | "desc";
 
-// Default: micronutrient density, descending (spec §A/§C3).
-export const DEFAULT_SORT_KEY: SortKey = "density";
+// Default: protein delivered, descending. Protein is the primary consideration;
+// the micronutrient density score is secondary (it breaks ties, and is one click
+// away as its own column). Revision §A defaulted to density; per follow-up feedback
+// protein leads and density is the secondary score.
+export const DEFAULT_SORT_KEY: SortKey = "protein";
 export const DEFAULT_SORT_DIR: SortDir = "desc";
 
 function comparePrimary(a: ServingResult, b: ServingResult, key: SortKey): number {

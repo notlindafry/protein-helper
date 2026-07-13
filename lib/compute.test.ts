@@ -120,18 +120,27 @@ describe("flags", () => {
 });
 
 describe("sorting (§C3)", () => {
-  it("defaults to density descending", () => {
+  it("defaults to protein delivered descending", () => {
+    const a = food({ id: "a", caloriesPer100g: 100, proteinPer100g: 10 }); // 50 g
+    const b = food({ id: "b", caloriesPer100g: 100, proteinPer100g: 30 }); // 150 g
+    const c = food({ id: "c", caloriesPer100g: 100, proteinPer100g: 20 }); // 100 g
+    expect(buildResults([a, b, c], 500).map((r) => r.food.id)).toEqual(["b", "c", "a"]);
+  });
+
+  it("breaks protein ties by density (the secondary score)", () => {
+    // equal protein (all 100 g delivered); density from iron: b > a > c
     const a = food({ id: "a", caloriesPer100g: 100, micros: { ironMg: 1.8 } }); // 50
     const b = food({ id: "b", caloriesPer100g: 100, micros: { ironMg: 3.6 } }); // 100
     const c = food({ id: "c", caloriesPer100g: 100, micros: { ironMg: 0.9 } }); // 25
     expect(buildResults([a, b, c], 500).map((r) => r.food.id)).toEqual(["b", "a", "c"]);
   });
 
-  it("can re-sort by protein delivered ascending", () => {
+  it("can still sort by density, and by protein ascending", () => {
     const a = food({ id: "a", caloriesPer100g: 100, proteinPer100g: 10 });
     const b = food({ id: "b", caloriesPer100g: 100, proteinPer100g: 30 });
     const results = buildResults([a, b], 500);
     expect(sortResults(results, "protein", "asc").map((r) => r.food.id)).toEqual(["a", "b"]);
+    expect(sortResults(results, "density", "desc").length).toBe(2);
   });
 });
 
