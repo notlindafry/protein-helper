@@ -35,6 +35,12 @@ const securityHeaders = [
   },
   { key: "X-Content-Type-Options", value: "nosniff" },
   { key: "X-Frame-Options", value: "DENY" },
+  // Keep the deployment out of search indexes on every response, including
+  // non-HTML assets that can't carry a <meta robots> tag. The real guarantee is
+  // Vercel Password Protection (spec §12 Option A) — unauthenticated crawlers get
+  // a 401 and never see content; this header covers compliant bots as defence in
+  // depth and any window where protection is off.
+  { key: "X-Robots-Tag", value: "noindex, nofollow, noarchive, nosnippet" },
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
   {
     key: "Permissions-Policy",
