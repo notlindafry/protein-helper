@@ -1,9 +1,11 @@
 import type { Micronutrients } from "./types";
 
-// AUTO-GENERATED per-100g micronutrients (revision spec §B). Values resolved from
-// USDA FoodData Central reference data for each food's fdcId (Foundation / SR
-// Legacy; Branded for powders/bone broth). omega3Mg is EPA+DHA (seafood/eggs).
-// Refresh authoritatively with: FDC_API_KEY=... npm run build:data (scripts/build-dataset.ts).
+// Per-100g micronutrients (revision spec §B), one entry per food id. Values resolved
+// from USDA FoodData Central reference data for each food's fdcId (Foundation / SR
+// Legacy). omega3Mg is EPA+DHA (seafood/eggs). Micros are kept on the PRIMARY
+// (raw/as-sold/cooked-as-stored) basis; the density score is therefore basis-
+// approximate under the Raw/Cooked toggle (spec §"Raw vs cooked" data-model note).
+// Refresh authoritatively with: FDC_API_KEY=... npm run build:data.
 export const MICROS: Record<string, Micronutrients> = {
   "chicken-breast-skinless-raw": { ironMg: 0.7, potassiumMg: 370, magnesiumMg: 27, calciumMg: 5, zincMg: 0.8, vitaminB12Mcg: 0.3, vitaminDMcg: 0.1, seleniumMcg: 22, omega3Mg: 30 },
   "chicken-thigh-skinless-raw": { ironMg: 0.9, potassiumMg: 230, magnesiumMg: 22, calciumMg: 6, zincMg: 1.6, vitaminB12Mcg: 0.6, vitaminDMcg: 0.1, seleniumMcg: 19, omega3Mg: 45 },
@@ -48,17 +50,6 @@ export const MICROS: Record<string, Micronutrients> = {
   "greek-yogurt-2pct": { ironMg: 0.04, potassiumMg: 141, magnesiumMg: 11, calciumMg: 115, zincMg: 0.55, vitaminB12Mcg: 0.5, vitaminDMcg: 0, seleniumMcg: 9.7, omega3Mg: 0 },
   "cottage-cheese-lowfat": { ironMg: 0.07, potassiumMg: 84, magnesiumMg: 5, calciumMg: 61, zincMg: 0.4, vitaminB12Mcg: 0.63, vitaminDMcg: 0, seleniumMcg: 9.4, omega3Mg: 0 },
   "cottage-cheese-fullfat": { ironMg: 0.07, potassiumMg: 104, magnesiumMg: 8, calciumMg: 83, zincMg: 0.4, vitaminB12Mcg: 0.43, vitaminDMcg: 0.1, seleniumMcg: 9.7, omega3Mg: 0 },
-  "cheddar": { ironMg: 0.14, potassiumMg: 76, magnesiumMg: 28, calciumMg: 721, zincMg: 3.64, vitaminB12Mcg: 1.06, vitaminDMcg: 0.6, seleniumMcg: 13.9, omega3Mg: 0 },
-  "mozzarella-part-skim": { ironMg: 0.22, potassiumMg: 84, magnesiumMg: 22, calciumMg: 505, zincMg: 2.92, vitaminB12Mcg: 0.9, vitaminDMcg: 0.4, seleniumMcg: 17, omega3Mg: 0 },
-  "parmesan": { ironMg: 0.82, potassiumMg: 92, magnesiumMg: 44, calciumMg: 1184, zincMg: 2.75, vitaminB12Mcg: 1.2, vitaminDMcg: 0.5, seleniumMcg: 22.5, omega3Mg: 0 },
-  "string-cheese-part-skim": { ironMg: 0.22, potassiumMg: 84, magnesiumMg: 22, calciumMg: 505, zincMg: 2.92, vitaminB12Mcg: 0.9, vitaminDMcg: 0.4, seleniumMcg: 17, omega3Mg: 0 },
-  "ricotta-part-skim": { ironMg: 0.44, potassiumMg: 125, magnesiumMg: 15, calciumMg: 272, zincMg: 1.16, vitaminB12Mcg: 0.34, vitaminDMcg: 0.1, seleniumMcg: 14.5, omega3Mg: 0 },
-  "nonfat-dry-milk-powder": { ironMg: 0.32, potassiumMg: 1794, magnesiumMg: 110, calciumMg: 1257, zincMg: 4.08, vitaminB12Mcg: 4.03, vitaminDMcg: 0, seleniumMcg: 27.3, omega3Mg: 0 },
-  "kefir-lowfat": { ironMg: 0.04, potassiumMg: 150, magnesiumMg: 12, calciumMg: 120, zincMg: 0.46, vitaminB12Mcg: 0.44, vitaminDMcg: 1, seleniumMcg: 3.5, omega3Mg: 0 },
-  "skim-milk": { ironMg: 0.03, potassiumMg: 156, magnesiumMg: 11, calciumMg: 122, zincMg: 0.4, vitaminB12Mcg: 0.53, vitaminDMcg: 1.2, seleniumMcg: 3.3, omega3Mg: 0 },
-  "milk-2pct": { ironMg: 0.03, potassiumMg: 150, magnesiumMg: 11, calciumMg: 120, zincMg: 0.42, vitaminB12Mcg: 0.54, vitaminDMcg: 1.3, seleniumMcg: 2.2, omega3Mg: 0 },
-  "whole-milk": { ironMg: 0.03, potassiumMg: 132, magnesiumMg: 11, calciumMg: 113, zincMg: 0.37, vitaminB12Mcg: 0.45, vitaminDMcg: 1.3, seleniumMcg: 3.7, omega3Mg: 0 },
-  "buttermilk-lowfat": { ironMg: 0.05, potassiumMg: 151, magnesiumMg: 11, calciumMg: 116, zincMg: 0.42, vitaminB12Mcg: 0.22, vitaminDMcg: 0.1, seleniumMcg: 3.1, omega3Mg: 0 },
   "tofu-firm": { ironMg: 2.7, potassiumMg: 148, magnesiumMg: 58, calciumMg: 350, zincMg: 1.6, vitaminB12Mcg: 0, vitaminDMcg: 0, seleniumMcg: 17, omega3Mg: 0 },
   "tofu-extra-firm": { ironMg: 2.3, potassiumMg: 170, magnesiumMg: 60, calciumMg: 190, zincMg: 1.5, vitaminB12Mcg: 0, vitaminDMcg: 0, seleniumMcg: 9, omega3Mg: 0 },
   "tofu-silken": { ironMg: 1.1, potassiumMg: 120, magnesiumMg: 30, calciumMg: 111, zincMg: 0.8, vitaminB12Mcg: 0, vitaminDMcg: 0, seleniumMcg: 9, omega3Mg: 0 },
@@ -72,19 +63,4 @@ export const MICROS: Record<string, Micronutrients> = {
   "kidney-beans-cooked": { ironMg: 2.22, potassiumMg: 403, magnesiumMg: 42, calciumMg: 28, zincMg: 1, vitaminB12Mcg: 0, vitaminDMcg: 0, seleniumMcg: 1.2, omega3Mg: 0 },
   "quinoa-cooked": { ironMg: 1.49, potassiumMg: 172, magnesiumMg: 64, calciumMg: 17, zincMg: 1.09, vitaminB12Mcg: 0, vitaminDMcg: 0, seleniumMcg: 2.8, omega3Mg: 0 },
   "black-soybeans-cooked": { ironMg: 5.14, potassiumMg: 515, magnesiumMg: 86, calciumMg: 102, zincMg: 1.15, vitaminB12Mcg: 0, vitaminDMcg: 0, seleniumMcg: 7.3, omega3Mg: 0 },
-  "peanut-butter": { ironMg: 1.87, potassiumMg: 558, magnesiumMg: 154, calciumMg: 43, zincMg: 2.51, vitaminB12Mcg: 0, vitaminDMcg: 0, seleniumMcg: 4.1, omega3Mg: 0 },
-  "almonds": { ironMg: 3.7, potassiumMg: 733, magnesiumMg: 270, calciumMg: 269, zincMg: 3.1, vitaminB12Mcg: 0, vitaminDMcg: 0, seleniumMcg: 4.1, omega3Mg: 0 },
-  "peanuts": { ironMg: 4.58, potassiumMg: 705, magnesiumMg: 168, calciumMg: 92, zincMg: 3.27, vitaminB12Mcg: 0, vitaminDMcg: 0, seleniumMcg: 7.2, omega3Mg: 0 },
-  "pumpkin-seeds": { ironMg: 8.82, potassiumMg: 809, magnesiumMg: 592, calciumMg: 46, zincMg: 7.64, vitaminB12Mcg: 0, vitaminDMcg: 0, seleniumMcg: 9.4, omega3Mg: 0 },
-  "hemp-seeds": { ironMg: 7.95, potassiumMg: 1200, magnesiumMg: 700, calciumMg: 70, zincMg: 9.9, vitaminB12Mcg: 0, vitaminDMcg: 0, seleniumMcg: 0, omega3Mg: 0 },
-  "chia-seeds": { ironMg: 7.72, potassiumMg: 407, magnesiumMg: 335, calciumMg: 631, zincMg: 4.58, vitaminB12Mcg: 0, vitaminDMcg: 0, seleniumMcg: 55.2, omega3Mg: 0 },
-  "almond-butter": { ironMg: 3.49, potassiumMg: 748, magnesiumMg: 279, calciumMg: 347, zincMg: 3.27, vitaminB12Mcg: 0, vitaminDMcg: 0, seleniumMcg: 2.8, omega3Mg: 0 },
-  "whey-protein-isolate": { ironMg: 1, potassiumMg: 350, magnesiumMg: 30, calciumMg: 350, zincMg: 1, vitaminB12Mcg: 0, vitaminDMcg: 0, seleniumMcg: 20, omega3Mg: 0 },
-  "whey-protein-concentrate": { ironMg: 1, potassiumMg: 450, magnesiumMg: 40, calciumMg: 450, zincMg: 1.5, vitaminB12Mcg: 0, vitaminDMcg: 0, seleniumMcg: 25, omega3Mg: 0 },
-  "casein-protein": { ironMg: 0.5, potassiumMg: 150, magnesiumMg: 15, calciumMg: 800, zincMg: 3, vitaminB12Mcg: 0, vitaminDMcg: 0, seleniumMcg: 30, omega3Mg: 0 },
-  "pea-protein-isolate": { ironMg: 6, potassiumMg: 40, magnesiumMg: 40, calciumMg: 100, zincMg: 3, vitaminB12Mcg: 0, vitaminDMcg: 0, seleniumMcg: 5, omega3Mg: 0 },
-  "soy-protein-isolate": { ironMg: 14.5, potassiumMg: 81, magnesiumMg: 39, calciumMg: 178, zincMg: 4.03, vitaminB12Mcg: 0, vitaminDMcg: 0, seleniumMcg: 0.8, omega3Mg: 0 },
-  "egg-white-protein": { ironMg: 0.15, potassiumMg: 1125, magnesiumMg: 32, calciumMg: 54, zincMg: 0.13, vitaminB12Mcg: 0, vitaminDMcg: 0, seleniumMcg: 62.5, omega3Mg: 0 },
-  "collagen-peptides": { ironMg: 0.5, potassiumMg: 5, magnesiumMg: 2, calciumMg: 20, zincMg: 0.2, vitaminB12Mcg: 0, vitaminDMcg: 0, seleniumMcg: 0, omega3Mg: 0 },
-  "bone-broth": { ironMg: 0.2, potassiumMg: 50, magnesiumMg: 2, calciumMg: 10, zincMg: 0.1, vitaminB12Mcg: 0.1, vitaminDMcg: 0, seleniumMcg: 1, omega3Mg: 0 },
 };

@@ -1,5 +1,8 @@
 // Data schema (spec §3). One row per food; the app scales each to hit the target.
 
+// v4 is trimmed to dinner anchors (spec §Data): Nuts & seeds, Protein powders, and
+// Broths & liquids are dropped; the remaining categories are the ones you actually
+// cook a dinner around.
 export type Category =
   | "Poultry"
   | "Beef"
@@ -7,10 +10,7 @@ export type Category =
   | "Seafood"
   | "Eggs & dairy"
   | "Soy & plant"
-  | "Legumes & grains"
-  | "Nuts & seeds"
-  | "Protein powders"
-  | "Broths & liquids";
+  | "Legumes & grains";
 
 // weightBasis is a correctness field, not cosmetic (spec §5). It states whether the
 // per-100g macros — and therefore the serving the app tells you to weigh out — are
@@ -50,4 +50,26 @@ export type Food = {
   fdcId: string; // provenance (spec §2)
   fdcDataType: string; // provenance, e.g. "Foundation" / "SR Legacy" / "Branded"
   note?: string;
+
+  // --- v4 cooked basis (spec §"Raw vs cooked") ---------------------------------
+  // Parallel cooked fields for foods stored raw (muscle meats and fish). The
+  // Raw/Cooked toggle just picks the field set; one row per food, no duplicate rows.
+  // Sourced from real USDA FDC "cooked, roasted"/"cooked, dry heat" records — never
+  // from a raw→cooked multiplier (a fixed factor is false precision). Minimum
+  // required per affected food is cooked protein + calories; cooked fat/carbs/fiber
+  // are nice-to-have. As-sold foods (canned, dairy, eggs, tofu) and cooked-stored
+  // legumes/grains carry no cooked fields — they eat the same either way, so the
+  // toggle is a no-op for them.
+  //
+  // NOTE: cooked values are compiled from known FDC records and are UNVERIFIED in
+  // this build environment (no FDC_API_KEY / no network to FDC). They are flagged in
+  // COOKED_VALUES.md and must be confirmed with `FDC_API_KEY=... npm run build:data`
+  // before being trusted. Correct-but-flagged, not fabricated.
+  proteinPer100gCooked?: number; // grams, cooked basis
+  caloriesPer100gCooked?: number; // kcal, cooked basis
+  fatPer100gCooked?: number; // grams, cooked basis (optional)
+  carbsPer100gCooked?: number; // grams, cooked basis (optional)
+  fiberPer100gCooked?: number; // grams, cooked basis (optional)
+  fdcIdCooked?: string; // provenance for the cooked record
+  fdcDataTypeCooked?: string; // e.g. "SR Legacy"
 };

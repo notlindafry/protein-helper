@@ -1,47 +1,32 @@
 "use client";
 
-import type { ServingResult, SortKey, SortDir } from "@/lib/compute";
+import type { ServingResult } from "@/lib/compute";
 import {
-  formatGrams,
   formatCalories,
   formatMacro,
   formatDensity,
-  formatServingSecondary,
+  formatServing,
+  formatServingOunces,
+  formatOunces,
+  formatGrams,
 } from "@/lib/format";
 import {
   BasisBadge,
   CompleteBadge,
   NoteDisclosure,
-  ProteinFloorFlag,
-  LargePortionNote,
+  NutrientDetail,
+  OverCeilingFlag,
   RichIn,
 } from "./Badges";
 
-type Column = {
-  key: SortKey | null; // null = not sortable
-  label: string;
-  align: "left" | "right";
+// One display row: the primary serving (target "Me"), plus — when Cooking for two is
+// on — his portion and the raw buy-total.
+export type DisplayRow = {
+  result: ServingResult;
+  second: ServingResult | null;
+  buyOunces: number | null;
+  buyGrams: number | null;
 };
-
-const COLUMNS: Column[] = [
-  { key: "food", label: "Food", align: "left" },
-  { key: "serving", label: "Serving", align: "right" },
-  { key: "protein", label: "Protein (g)", align: "right" },
-  { key: "fat", label: "Fat (g)", align: "right" },
-  { key: "carbs", label: "Carbs (g)", align: "right" },
-  { key: "fiber", label: "Fiber (g)", align: "right" },
-  { key: "density", label: "Density", align: "right" },
-  { key: null, label: "Rich in", align: "left" },
-];
-
-function SortArrow({ active, dir }: { active: boolean; dir: SortDir }) {
-  if (!active) return null;
-  return (
-    <span aria-hidden="true" className="ml-1 text-[var(--accent)]">
-      {dir === "asc" ? "▲" : "▼"}
-    </span>
-  );
-}
 
 function FoodName({ result }: { result: ServingResult }) {
   const { food } = result;
@@ -49,7 +34,7 @@ function FoodName({ result }: { result: ServingResult }) {
     <div className="flex flex-col gap-1.5">
       <span className="font-medium text-[var(--text-strong)]">{food.name}</span>
       <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
-        <BasisBadge basis={food.weightBasis} />
+        <BasisBadge basis={result.basisTag} />
         <CompleteBadge complete={food.isCompleteProtein} />
         <NoteDisclosure note={food.note} />
       </div>
@@ -60,38 +45,24 @@ function FoodName({ result }: { result: ServingResult }) {
 function ServingCell({ result }: { result: ServingResult }) {
   return (
     <div className="flex flex-col items-end gap-0.5">
-      <span className="tabular-nums text-[var(--text)]">
-        {formatGrams(result.servingGrams)} g
-      </span>
-      <span className="text-xs tabular-nums text-[var(--text-muted)]">
-        {formatCalories(result.calories)} cal · {formatServingSecondary(result)}
-      </span>
-      {result.isLargePortion ? <LargePortionNote /> : null}
-    </div>
-  );
-}
-
-function ProteinCell({ result }: { result: ServingResult }) {
-  return (
-    <div className="flex flex-col items-end gap-0.5">
       <span className="tabular-nums text-[var(--text-strong)]">
-        {formatMacro(result.proteinDelivered)}
+        {formatServing(result)}
       </span>
-      {result.belowProteinFloor ? <ProteinFloorFlag /> : null}
+      {result.overCeiling ? <OverCeilingFlag /> : null}
     </div>
   );
 }
 
 export default function ResultsTable({
-  results,
-  sortKey,
-  sortDir,
-  onSort,
+  rows,
+  cookingForTwo,
+  meLabel,
+  husbandLabel,
 }: {
-  results: ServingResult[];
-  sortKey: SortKey;
-  sortDir: SortDir;
-  onSort: (key: SortKey) => void;
+  rows: DisplayRow[];
+  cookingForTwo: boolean;
+  meLabel: string;
+  husbandLabel: string;
 }) {
   return (
     <>
@@ -99,60 +70,61 @@ export default function ResultsTable({
       <div className="hidden overflow-x-auto lg:block">
         <table className="w-full border-collapse text-sm">
           <thead>
-            <tr className="border-b border-[var(--border-strong)]">
-              {COLUMNS.map((col) => {
-                const active = col.key !== null && sortKey === col.key;
-                const base = `px-3 py-2.5 font-body text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)] ${
-                  col.align === "right" ? "text-right" : "text-left"
-                }`;
-                return (
-                  <th
-                    key={col.label}
-                    scope="col"
-                    aria-sort={
-                      active ? (sortDir === "asc" ? "ascending" : "descending") : "none"
-                    }
-                    className={base}
-                  >
-                    {col.key === null ? (
-                      <span>{col.label}</span>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => onSort(col.key as SortKey)}
-                        className={`inline-flex items-center rounded-[var(--radius-sm)] px-1 py-0.5 transition-colors hover:text-[var(--text-strong)] ${
-                          active ? "text-[var(--text-strong)]" : ""
-                        } ${col.align === "right" ? "flex-row-reverse" : ""}`}
-                      >
-                        <span>{col.label}</span>
-                        <SortArrow active={active} dir={sortDir} />
-                      </button>
-                    )}
-                  </th>
-                );
-              })}
+            <tr className="border-b border-[var(--border-strong)] text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
+              <th scope="col" className="px-3 py-2.5 text-left">Food</th>
+              <th scope="col" className="px-3 py-2.5 text-right">
+                {cookingForTwo ? `${meLabel} · serving` : "Serving"}
+              </th>
+              {cookingForTwo ? (
+                <>
+                  <th scope="col" className="px-3 py-2.5 text-right">{husbandLabel} · serving</th>
+                  <th scope="col" className="px-3 py-2.5 text-right">Buy (raw)</th>
+                </>
+              ) : null}
+              <th scope="col" className="px-3 py-2.5 text-right">Calories</th>
+              <th scope="col" className="px-3 py-2.5 text-right">Fiber (g)</th>
+              <th scope="col" className="px-3 py-2.5 text-right">Density</th>
+              <th scope="col" className="px-3 py-2.5 text-left">Rich in</th>
             </tr>
           </thead>
           <tbody>
-            {results.map((r) => (
+            {rows.map(({ result: r, second, buyOunces, buyGrams }) => (
               <tr
                 key={r.food.id}
-                className="border-b border-[var(--border)] transition-colors hover:bg-[var(--surface-hover)]"
+                className={`border-b border-[var(--border)] transition-colors hover:bg-[var(--surface-hover)] ${
+                  r.overCeiling ? "opacity-55" : ""
+                }`}
               >
                 <td className="px-3 py-3 align-top">
                   <FoodName result={r} />
+                  <div className="mt-1.5">
+                    <NutrientDetail result={r} />
+                  </div>
                 </td>
                 <td className="px-3 py-3 align-top">
                   <ServingCell result={r} />
                 </td>
-                <td className="px-3 py-3 align-top">
-                  <ProteinCell result={r} />
-                </td>
+                {cookingForTwo ? (
+                  <>
+                    <td className="px-3 py-3 text-right align-top tabular-nums text-[var(--text)]">
+                      {second ? formatServing(second) : "—"}
+                    </td>
+                    <td className="px-3 py-3 text-right align-top tabular-nums text-[var(--text-strong)]">
+                      {buyOunces !== null && buyGrams !== null ? (
+                        <div className="flex flex-col items-end gap-0.5">
+                          <span>{formatOunces(buyOunces)}</span>
+                          <span className="text-xs text-[var(--text-muted)]">
+                            {formatGrams(buyGrams)} g
+                          </span>
+                        </div>
+                      ) : (
+                        "—"
+                      )}
+                    </td>
+                  </>
+                ) : null}
                 <td className="px-3 py-3 text-right align-top tabular-nums text-[var(--text)]">
-                  {formatMacro(r.fat)}
-                </td>
-                <td className="px-3 py-3 text-right align-top tabular-nums text-[var(--text)]">
-                  {formatMacro(r.carbs)}
+                  {formatCalories(r.calories)}
                 </td>
                 <td className="px-3 py-3 text-right align-top tabular-nums text-[var(--text)]">
                   {formatMacro(r.fiber)}
@@ -171,10 +143,12 @@ export default function ResultsTable({
 
       {/* Mobile / narrow: stacked cards. */}
       <ul className="flex flex-col gap-3 lg:hidden">
-        {results.map((r) => (
+        {rows.map(({ result: r, second, buyOunces, buyGrams }) => (
           <li
             key={r.food.id}
-            className="rounded-[var(--radius)] border border-[var(--border)] bg-[var(--surface)] p-4"
+            className={`rounded-[var(--radius)] border border-[var(--border)] bg-[var(--surface)] p-4 ${
+              r.overCeiling ? "opacity-60" : ""
+            }`}
           >
             <div className="flex items-start justify-between gap-3">
               <FoodName result={r} />
@@ -190,25 +164,41 @@ export default function ResultsTable({
 
             <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
               <div className="flex items-baseline justify-between gap-2">
-                <dt className="text-xs text-[var(--text-muted)]">Serving</dt>
+                <dt className="text-xs text-[var(--text-muted)]">
+                  {cookingForTwo ? meLabel : "Serving"}
+                </dt>
                 <dd className="text-right">
                   <ServingCell result={r} />
                 </dd>
               </div>
-              <div className="flex items-baseline justify-between gap-2">
-                <dt className="text-xs text-[var(--text-muted)]">Protein</dt>
-                <dd className="text-right">
-                  <ProteinCell result={r} />
-                </dd>
-              </div>
-              <Metric label="Fat" value={`${formatMacro(r.fat)} g`} />
-              <Metric label="Carbs" value={`${formatMacro(r.carbs)} g`} />
+              {cookingForTwo ? (
+                <>
+                  <div className="flex items-baseline justify-between gap-2">
+                    <dt className="text-xs text-[var(--text-muted)]">{husbandLabel}</dt>
+                    <dd className="text-right tabular-nums text-[var(--text)]">
+                      {second ? formatServingOunces(second) : "—"}
+                    </dd>
+                  </div>
+                  <div className="col-span-2 flex items-baseline justify-between gap-2">
+                    <dt className="text-xs text-[var(--text-muted)]">Buy total (raw)</dt>
+                    <dd className="text-right tabular-nums text-[var(--text-strong)]">
+                      {buyOunces !== null && buyGrams !== null
+                        ? `${formatOunces(buyOunces)} (${formatGrams(buyGrams)} g)`
+                        : "—"}
+                    </dd>
+                  </div>
+                </>
+              ) : null}
+              <Metric label="Calories" value={formatCalories(r.calories)} />
               <Metric label="Fiber" value={`${formatMacro(r.fiber)} g`} />
             </dl>
 
             <div className="mt-3 flex flex-wrap items-baseline gap-x-2 gap-y-1 border-t border-[var(--border)] pt-3 text-sm">
               <span className="text-xs text-[var(--text-muted)]">Rich in</span>
               <RichIn result={r} />
+            </div>
+            <div className="mt-2">
+              <NutrientDetail result={r} />
             </div>
           </li>
         ))}

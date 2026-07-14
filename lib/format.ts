@@ -1,8 +1,8 @@
 import type { ServingResult } from "./compute";
 import type { WeightBasis } from "./types";
 
-// Display rounding (spec §6): servings and macros to whole numbers or one decimal for
-// readability. Full precision is preserved upstream in the ServingResult.
+// Display rounding (spec §6): servings primary in ounces with grams in parens,
+// calories and macros to readable precision. Full precision is preserved upstream.
 
 export function formatGrams(grams: number): string {
   return Math.round(grams).toLocaleString("en-US");
@@ -28,9 +28,23 @@ export function formatOmega3(mg: number): string {
   return `${Math.round(mg).toLocaleString("en-US")} mg`;
 }
 
-// The oz / fl oz column mixes units per row: weight ounces for solids, fluid ounces
-// for liquids. The unit travels with the value so the column is never ambiguous.
-export function formatServingSecondary(r: ServingResult): string {
+// Ounces to one decimal, weight or fluid depending on the food. Used for the serving
+// column and the shared-dinner buy-total.
+export function formatOunces(ounces: number): string {
+  return `${ounces.toFixed(1)} oz`;
+}
+
+// Serving, primary unit: ounces (fluid ounces for liquids) with grams in parens
+// (spec §"The table"): "4.8 oz (135 g)".
+export function formatServing(r: ServingResult): string {
+  if (r.food.isLiquid && r.fluidOunces !== null) {
+    return `${r.fluidOunces.toFixed(1)} fl oz (${formatGrams(r.servingGrams)} g)`;
+  }
+  return `${r.ounces.toFixed(1)} oz (${formatGrams(r.servingGrams)} g)`;
+}
+
+// Just the primary ounces figure (no grams), e.g. for a compact portion cell.
+export function formatServingOunces(r: ServingResult): string {
   if (r.food.isLiquid && r.fluidOunces !== null) {
     return `${r.fluidOunces.toFixed(1)} fl oz`;
   }
