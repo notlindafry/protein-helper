@@ -50,6 +50,8 @@ export const MICROS: Record<string, Micronutrients> = {
   "greek-yogurt-2pct": { ironMg: 0.04, potassiumMg: 141, magnesiumMg: 11, calciumMg: 115, zincMg: 0.55, vitaminB12Mcg: 0.5, vitaminDMcg: 0, seleniumMcg: 9.7, omega3Mg: 0 },
   "cottage-cheese-lowfat": { ironMg: 0.07, potassiumMg: 84, magnesiumMg: 5, calciumMg: 61, zincMg: 0.4, vitaminB12Mcg: 0.63, vitaminDMcg: 0, seleniumMcg: 9.4, omega3Mg: 0 },
   "cottage-cheese-fullfat": { ironMg: 0.07, potassiumMg: 104, magnesiumMg: 8, calciumMg: 83, zincMg: 0.4, vitaminB12Mcg: 0.43, vitaminDMcg: 0.1, seleniumMcg: 9.7, omega3Mg: 0 },
+  // Halloumi: reference values for a brined semi-hard cheese; UNVERIFIED (no FDC access here). Refresh with build:data.
+  "halloumi": { ironMg: 0.4, potassiumMg: 55, magnesiumMg: 25, calciumMg: 700, zincMg: 2.8, vitaminB12Mcg: 1.0, vitaminDMcg: 0.3, seleniumMcg: 15, omega3Mg: 0 },
   "tofu-firm": { ironMg: 2.7, potassiumMg: 148, magnesiumMg: 58, calciumMg: 350, zincMg: 1.6, vitaminB12Mcg: 0, vitaminDMcg: 0, seleniumMcg: 17, omega3Mg: 0 },
   "tofu-extra-firm": { ironMg: 2.3, potassiumMg: 170, magnesiumMg: 60, calciumMg: 190, zincMg: 1.5, vitaminB12Mcg: 0, vitaminDMcg: 0, seleniumMcg: 9, omega3Mg: 0 },
   "tofu-silken": { ironMg: 1.1, potassiumMg: 120, magnesiumMg: 30, calciumMg: 111, zincMg: 0.8, vitaminB12Mcg: 0, vitaminDMcg: 0, seleniumMcg: 9, omega3Mg: 0 },

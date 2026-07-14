@@ -945,6 +945,22 @@ const FOOD_BASE: Omit<Food, "micros">[] = [
     fdcDataType: "SR Legacy",
     note: "Creamed, large or small curd.",
   },
+  {
+    id: "halloumi",
+    name: "Halloumi",
+    category: "Eggs & dairy",
+    proteinPer100g: 22,
+    caloriesPer100g: 321,
+    fatPer100g: 26,
+    carbsPer100g: 2.2,
+    fiberPer100g: 0,
+    weightBasis: "as_sold",
+    isLiquid: false,
+    isCompleteProtein: true,
+    fdcId: "473542",
+    fdcDataType: "Branded",
+    note: "Grilling/pan-frying cheese (dinner protein). Values compiled from a USDA FDC Branded halloumi record and typical brand data; UNVERIFIED in this build environment (no FDC_API_KEY / no network to FDC). Halloumi differs by brand (protein ~20–25 g, calcium ~600–900 mg per 100 g). Confirm with `FDC_API_KEY=... npm run build:data`.",
+  },
 
   // ── Soy & plant (basis: as sold, except edamame cooked) ────────────────────
   {
