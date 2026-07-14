@@ -105,7 +105,7 @@ export default function CalorieCeilingApp() {
                 placeholder="any"
                 value={proteinRaw}
                 onChange={(e) => setProteinRaw(e.target.value)}
-                className="w-full rounded-[var(--radius)] border border-[var(--border-strong)] bg-[var(--surface)] px-4 py-3 pr-9 font-display text-3xl text-[var(--text-strong)] outline-none transition-colors focus:border-[var(--accent)]"
+                className="w-full rounded-[var(--radius-sm)] border border-[var(--border-strong)] bg-[var(--surface)] px-4 py-3 pr-9 font-display text-3xl text-[var(--text-strong)] outline-none transition-colors placeholder:text-[var(--text-faint)] focus:border-[var(--accent)] focus:shadow-[0_0_0_3px_var(--accent-dim)]"
               />
               <span
                 aria-hidden="true"
@@ -136,7 +136,7 @@ export default function CalorieCeilingApp() {
                 placeholder="any"
                 value={calorieRaw}
                 onChange={(e) => setCalorieRaw(e.target.value)}
-                className="w-full rounded-[var(--radius)] border border-[var(--border-strong)] bg-[var(--surface)] px-4 py-3 pr-14 font-display text-3xl text-[var(--text-strong)] outline-none transition-colors focus:border-[var(--accent)]"
+                className="w-full rounded-[var(--radius-sm)] border border-[var(--border-strong)] bg-[var(--surface)] px-4 py-3 pr-14 font-display text-3xl text-[var(--text-strong)] outline-none transition-colors placeholder:text-[var(--text-faint)] focus:border-[var(--accent)] focus:shadow-[0_0_0_3px_var(--accent-dim)]"
               />
               <span
                 aria-hidden="true"
