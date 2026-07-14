@@ -4,33 +4,29 @@ import type { Food } from "./types";
 export const GRAMS_PER_OUNCE = 28.3495; // 1 oz (weight)
 export const ML_PER_FLUID_OUNCE = 29.5735; // 1 fl oz
 
-// --- Revision v2: calorie-ceiling dinner-nutrient reference ---
+// v4 defaults to pre-fill (spec §Handoff): protein target 35 g, calorie ceiling
+// blank, basis Raw, sort density, "Cooking for two" off, shared targets "Me"/"Husband".
+export const DEFAULT_PROTEIN_TARGET = 35; // g
+export const DEFAULT_SHARED_ME_TARGET = 35; // g (your shared-dinner default)
+export const DEFAULT_SHARED_HUSBAND_TARGET = 50; // g (his shared-dinner default)
 
-// Micronutrient density score (spec §C1): a single nutrient can contribute at most
-// NUTRIENT_CAP %DV, so no one nutrient dominates the NRF-style capped index.
+// Sane input bounds (spec §Security: positive, sane bounds). A protein target above
+// this or a ceiling above CEILING_MAX is almost certainly a typo.
+export const PROTEIN_TARGET_MIN = 1;
+export const PROTEIN_TARGET_MAX = 300;
+export const CALORIE_CEILING_MAX = 10000;
+
+// Nutrient-density score (spec §"Nutrient density"): a single nutrient can contribute
+// at most NUTRIENT_CAP %DV, so no one nutrient (selenium in fish) dominates the sum.
 export const NUTRIENT_CAP = 100;
 
-// Optional "below dinner protein" flag (spec §C4). Tunable.
-export const DINNER_PROTEIN_FLOOR = 30; // g of protein delivered at the ceiling
-
-// Two-target band search: when a protein target is set alongside the calorie target,
-// a food matches only if a single serving lands within ±SEARCH_TOLERANCE of BOTH
-// (e.g. 500 cal & 50 g → 450–550 cal and 45–55 g). Tunable.
-export const SEARCH_TOLERANCE = 0.1; // ±10%
-
-// FDA labeling thresholds on %DV (spec §C2), used for the "rich in" highlights.
-export const HIGH_IN_PCT = 20; // "high in"
+// FDA labeling thresholds on %DV, used for the "rich in" highlights.
+export const HIGH_IN_PCT = 20; // "rich in" (top nutrients ≥20% DV)
 export const GOOD_SOURCE_PCT = 10; // "good source" (10–19%)
 
-// Omega-3 (EPA+DHA) has NO FDA Daily Value (spec §B3). It is a seafood highlight
-// only, compared to a reference intake and always marked non-DV.
+// Omega-3 (EPA+DHA) has NO FDA Daily Value. It is a seafood highlight only,
+// compared to a reference intake and always marked non-DV.
 export const OMEGA3_REFERENCE_MG = 250; // mg/day EPA+DHA (combined), non-DV reference
-
-// Large-portion note (spec §C5). With a calorie anchor, big servings are the point,
-// so this is a NEUTRAL note (not a warning) and the threshold is set high — it only
-// flags genuinely unwieldy portions.
-export const LARGE_PORTION_GRAMS = 1200;
-export const LARGE_PORTION_FLOZ = 40;
 
 // FDA adult Daily Values — 2016 Nutrition Facts label reference amounts (spec §B3).
 // Verified against the current FDA "Daily Value on the New Nutrition Facts label"

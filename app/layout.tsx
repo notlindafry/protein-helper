@@ -16,10 +16,10 @@ const body = Inter({
 });
 
 export const metadata: Metadata = {
-  applicationName: "gains-helper",
-  title: "gains-helper",
+  applicationName: "protein-helper",
+  title: "protein-helper",
   description:
-    "Enter a protein goal and see each food scaled to the serving that hits it on its own — with the calories, fat, carbs, and fiber that serving costs.",
+    "Enter a protein target and see the serving of each food that hits it — with the calories that serving costs, its fiber, and a nutrient-density score, in raw or cooked weight.",
   robots: { index: false, follow: false },
   manifest: "/manifest.webmanifest",
   // The flexed-arm app icon is also the browser-tab favicon. SVG for modern
@@ -34,10 +34,11 @@ export const metadata: Metadata = {
     shortcut: [{ url: "/favicon.ico" }],
     apple: [{ url: "/icons/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
   },
-  // Installed-app presentation (Android is primary; iOS honours these too).
+  // Installed-app presentation (Android is primary; iOS honours these too). This is a
+  // bare installable manifest + icons only — no service worker (spec Decision 7).
   appleWebApp: {
     capable: true,
-    title: "gains-helper",
+    title: "protein-helper",
     statusBarStyle: "black-translucent",
   },
 };

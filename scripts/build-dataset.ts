@@ -7,12 +7,19 @@
  * micronutrients from the live USDA FoodData Central REST API. BUILD-TIME ONLY;
  * never imported by the app.
  *
- * It reads the fdcId + metadata already chosen in lib/foods.ts, fetches those exact
- * FDC entries, and:
- *   - default (verify):  prints any per-100g value (macro or micro) that drifts from
- *                        the committed dataset beyond a small tolerance.
- *   - --write:           emits lib/foods.generated.ts (macros/base) and
- *                        lib/micros.generated.ts (micronutrients) to diff and copy.
+ * It reads the fdcId + metadata already chosen in lib/foods.ts (BOTH the raw fdcId
+ * and the parallel cooked fdcIdCooked for meats/fish), fetches those exact FDC
+ * entries, and:
+ *   - default (verify):  prints any per-100g value (macro, micro, OR cooked
+ *                        protein/calories) that drifts from the committed dataset
+ *                        beyond a small tolerance.
+ *   - --write:           emits lib/foods.generated.ts (macros/base + cooked fields)
+ *                        and lib/micros.generated.ts (micronutrients) to diff and copy.
+ *
+ * IMPORTANT: the cooked values in lib/foods.ts were compiled from known USDA FDC
+ * cooked records but are UNVERIFIED (no FDC_API_KEY / no network to FDC in the build
+ * environment). Running this script with a key is how you confirm each cooked fdcId
+ * resolves to the expected cooked protein + calories. See COOKED_VALUES.md.
  *
  * Usage:
  *   FDC_API_KEY=your_key npm run build:data
@@ -177,6 +184,21 @@ function serializeBase(f: Food): string {
   L.push(`    fdcId: ${JSON.stringify(f.fdcId)},`);
   L.push(`    fdcDataType: ${JSON.stringify(f.fdcDataType)},`);
   if (f.note !== undefined) L.push(`    note: ${JSON.stringify(f.note)},`);
+  // Parallel cooked fields (spec §"Raw vs cooked"), preserved on round-trip.
+  if (f.proteinPer100gCooked !== undefined)
+    L.push(`    proteinPer100gCooked: ${f.proteinPer100gCooked},`);
+  if (f.caloriesPer100gCooked !== undefined)
+    L.push(`    caloriesPer100gCooked: ${f.caloriesPer100gCooked},`);
+  if (f.fatPer100gCooked !== undefined)
+    L.push(`    fatPer100gCooked: ${f.fatPer100gCooked},`);
+  if (f.carbsPer100gCooked !== undefined)
+    L.push(`    carbsPer100gCooked: ${f.carbsPer100gCooked},`);
+  if (f.fiberPer100gCooked !== undefined)
+    L.push(`    fiberPer100gCooked: ${f.fiberPer100gCooked},`);
+  if (f.fdcIdCooked !== undefined)
+    L.push(`    fdcIdCooked: ${JSON.stringify(f.fdcIdCooked)},`);
+  if (f.fdcDataTypeCooked !== undefined)
+    L.push(`    fdcDataTypeCooked: ${JSON.stringify(f.fdcDataTypeCooked)},`);
   L.push("  },");
   return L.join("\n");
 }
@@ -192,10 +214,16 @@ async function main() {
   }
   const write = process.argv.includes("--write");
 
-  const fdcIds = [...new Set(FOODS.map((f) => Number(f.fdcId)))].filter(
+  // Fetch every referenced FDC entry once: the raw fdcId AND the cooked fdcIdCooked.
+  const rawIds = FOODS.map((f) => Number(f.fdcId));
+  const cookedIds = FOODS.map((f) => Number(f.fdcIdCooked)).filter((n) => n > 0);
+  const fdcIds = [...new Set([...rawIds, ...cookedIds])].filter(
     (n) => Number.isFinite(n) && n > 0,
   );
-  console.log(`Fetching ${fdcIds.length} FDC entries (macros + micros)…`);
+  const cookedCount = FOODS.filter((f) => f.fdcIdCooked).length;
+  console.log(
+    `Fetching ${fdcIds.length} FDC entries (macros + micros; ${cookedCount} cooked records)…`,
+  );
   const fetched = await fetchFoods(fdcIds, apiKey);
   const byId = new Map<number, Resolved>();
   for (const f of fetched) byId.set(f.fdcId, resolve(f));
@@ -223,7 +251,44 @@ async function main() {
         console.log(`  ~ ${food.id} ${label}: committed ${committed} vs FDC ${fresh}`);
       }
     }
-    return { ...food, ...live };
+
+    // Verify the cooked record (spec §"Raw vs cooked"): the cooked fdcId must resolve
+    // to the committed cooked protein + calories (the minimum the toggle needs), and
+    // any committed cooked macro is checked too. This is the flagged UNVERIFIED data.
+    const cooked: Partial<Food> = {};
+    if (food.fdcIdCooked) {
+      const liveCooked = byId.get(Number(food.fdcIdCooked));
+      if (!liveCooked) {
+        console.warn(
+          `  ! ${food.id}: cooked fdcId ${food.fdcIdCooked} not returned by FDC`,
+        );
+      } else {
+        const cookedChecks: [string, number | undefined, number][] = [
+          ["cooked protein", food.proteinPer100gCooked, liveCooked.proteinPer100g],
+          ["cooked calories", food.caloriesPer100gCooked, liveCooked.caloriesPer100g],
+          ["cooked fat", food.fatPer100gCooked, liveCooked.fatPer100g],
+          ["cooked carbs", food.carbsPer100gCooked, liveCooked.carbsPer100g],
+          ["cooked fiber", food.fiberPer100gCooked, liveCooked.fiberPer100g],
+        ];
+        for (const [label, committed, fresh] of cookedChecks) {
+          if (committed === undefined) continue;
+          if (drift(committed, fresh) > TOLERANCE) {
+            flagged++;
+            console.log(`  ~ ${food.id} ${label}: committed ${committed} vs FDC ${fresh}`);
+          }
+        }
+        cooked.proteinPer100gCooked = liveCooked.proteinPer100g;
+        cooked.caloriesPer100gCooked = liveCooked.caloriesPer100g;
+        if (food.fatPer100gCooked !== undefined)
+          cooked.fatPer100gCooked = liveCooked.fatPer100g;
+        if (food.carbsPer100gCooked !== undefined)
+          cooked.carbsPer100gCooked = liveCooked.carbsPer100g;
+        if (food.fiberPer100gCooked !== undefined)
+          cooked.fiberPer100gCooked = liveCooked.fiberPer100g;
+      }
+    }
+
+    return { ...food, ...live, ...cooked };
   });
 
   console.log(

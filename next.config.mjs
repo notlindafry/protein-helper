@@ -10,9 +10,9 @@
 // Router emits small inline bootstrap/RSC-streaming scripts and next/font injects
 // an inline <style>. Tightening these to a per-request nonce would require adding
 // Next middleware to generate and thread the nonce; deliberately not done here to
-// keep the deployment middleware-free (auth is handled by Vercel Password
-// Protection at the platform edge — spec §12 Option A). Revisit if third-party
-// scripts are ever introduced.
+// keep the deployment middleware-free. This is a static, public, no-PII reference
+// tool with no auth, no backend, and no secrets (spec §Security), so there is
+// nothing to authorize. Revisit if third-party scripts are ever introduced.
 const csp = [
   "default-src 'self'",
   "base-uri 'self'",
@@ -24,10 +24,8 @@ const csp = [
   "style-src 'self' 'unsafe-inline'",
   "script-src 'self' 'unsafe-inline'",
   "connect-src 'self'",
-  // PWA: the service worker (public/sw.js) and the web app manifest are both
-  // same-origin. worker-src / manifest-src are set explicitly rather than relying
-  // on the default-src fallback.
-  "worker-src 'self'",
+  // The web app manifest is same-origin. There is no service worker (spec Decision 7);
+  // manifest-src is set explicitly rather than relying on the default-src fallback.
   "manifest-src 'self'",
   "upgrade-insecure-requests",
 ].join("; ");
@@ -41,10 +39,9 @@ const securityHeaders = [
   { key: "X-Content-Type-Options", value: "nosniff" },
   { key: "X-Frame-Options", value: "DENY" },
   // Keep the deployment out of search indexes on every response, including
-  // non-HTML assets that can't carry a <meta robots> tag. The real guarantee is
-  // Vercel Password Protection (spec §12 Option A) — unauthenticated crawlers get
-  // a 401 and never see content; this header covers compliant bots as defence in
-  // depth and any window where protection is off.
+  // non-HTML assets that can't carry a <meta robots> tag. v4 has no auth gate
+  // (spec §Security), so this header + robots.ts + the noindex <meta> are what keep
+  // the public URL from surfacing in search.
   { key: "X-Robots-Tag", value: "noindex, nofollow, noarchive, nosnippet" },
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
   {

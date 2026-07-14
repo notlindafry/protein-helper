@@ -1,7 +1,8 @@
 import { BasisBadge, CompleteBadge } from "./Badges";
 
 // Always-visible key for the row annotations and the density score. This is the
-// primary explainer (touch devices have no hover), so nothing here relies on a tooltip.
+// primary explainer (a phone in the kitchen has no hover), so nothing here relies on
+// a tooltip.
 export default function Legend() {
   return (
     <div className="flex flex-col gap-2 rounded-[var(--radius)] border border-[var(--border)] bg-[var(--surface)] px-4 py-3 text-xs text-[var(--text-muted)]">
@@ -9,8 +10,8 @@ export default function Legend() {
         <span className="font-medium text-[var(--text)]">Density</span>
         <span>
           = capped %DV summed across fiber, iron, potassium, magnesium, calcium,
-          zinc, and vitamins B12 &amp; D and selenium at the serving shown (each
-          nutrient counts up to 100%). Higher = more micronutrients per plate.
+          zinc, vitamin B12, vitamin D, and selenium at the serving shown (each
+          nutrient counts up to 100%). Higher = more micronutrients on that plate.
         </span>
       </div>
       <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
@@ -32,10 +33,10 @@ export default function Legend() {
         <span>has all nine essential amino acids.</span>
       </div>
       <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-        <span className="font-medium text-[var(--danger)]">▾ under dinner protein</span>
+        <span className="font-medium text-[var(--danger)]">▲ over ceiling</span>
         <span>
-          this serving delivers under 30 g protein; portion decisions may need a
-          second source.
+          this food&rsquo;s own calories at the target exceed the calorie ceiling;
+          the row is dimmed and sorted last, not hidden.
         </span>
       </div>
     </div>
