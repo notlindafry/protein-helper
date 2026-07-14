@@ -16,6 +16,7 @@ export const MICROS: Record<string, Micronutrients> = {
   "turkey-breast-skinless-raw": { ironMg: 0.6, potassiumMg: 300, magnesiumMg: 29, calciumMg: 10, zincMg: 1.1, vitaminB12Mcg: 0.5, vitaminDMcg: 0.1, seleniumMcg: 26, omega3Mg: 30 },
   "ground-turkey-93-7-raw": { ironMg: 1.1, potassiumMg: 260, magnesiumMg: 23, calciumMg: 16, zincMg: 2.2, vitaminB12Mcg: 1, vitaminDMcg: 0.2, seleniumMcg: 22, omega3Mg: 60 },
   "duck-breast-raw": { ironMg: 2.4, potassiumMg: 271, magnesiumMg: 19, calciumMg: 11, zincMg: 1.9, vitaminB12Mcg: 2.9, vitaminDMcg: 0.1, seleniumMcg: 20, omega3Mg: 80 },
+  "duck-leg-skin-on-raw": { ironMg: 2.4, potassiumMg: 200, magnesiumMg: 16, calciumMg: 11, zincMg: 1.9, vitaminB12Mcg: 0.3, vitaminDMcg: 0.2, seleniumMcg: 14, omega3Mg: 290 },
   "pork-tenderloin-raw": { ironMg: 0.9, potassiumMg: 400, magnesiumMg: 26, calciumMg: 5, zincMg: 2, vitaminB12Mcg: 0.6, vitaminDMcg: 0.4, seleniumMcg: 34, omega3Mg: 15 },
   "pork-loin-chop-raw": { ironMg: 0.8, potassiumMg: 390, magnesiumMg: 27, calciumMg: 10, zincMg: 2, vitaminB12Mcg: 0.7, vitaminDMcg: 0.6, seleniumMcg: 32, omega3Mg: 15 },
   "pork-shoulder-raw": { ironMg: 1, potassiumMg: 320, magnesiumMg: 20, calciumMg: 15, zincMg: 2.7, vitaminB12Mcg: 0.7, vitaminDMcg: 0.6, seleniumMcg: 27, omega3Mg: 30 },
@@ -30,6 +31,16 @@ export const MICROS: Record<string, Micronutrients> = {
   "beef-chuck-raw": { ironMg: 2.3, potassiumMg: 310, magnesiumMg: 19, calciumMg: 14, zincMg: 6, vitaminB12Mcg: 2.5, vitaminDMcg: 0.1, seleniumMcg: 18, omega3Mg: 25 },
   "beef-tenderloin-raw": { ironMg: 1.8, potassiumMg: 360, magnesiumMg: 24, calciumMg: 18, zincMg: 3.1, vitaminB12Mcg: 1.8, vitaminDMcg: 0.1, seleniumMcg: 28, omega3Mg: 20 },
   "beef-top-round-raw": { ironMg: 2, potassiumMg: 360, magnesiumMg: 24, calciumMg: 16, zincMg: 4, vitaminB12Mcg: 1.7, vitaminDMcg: 0.1, seleniumMcg: 30, omega3Mg: 15 },
+  "veal-leg-top-round-raw": { ironMg: 0.83, potassiumMg: 360, magnesiumMg: 25, calciumMg: 5, zincMg: 3, vitaminB12Mcg: 1.5, vitaminDMcg: 0, seleniumMcg: 9.3, omega3Mg: 15 },
+  // Lamb / Goat / Game — reference micros for USDA SR Legacy red/game meats; UNVERIFIED (no FDC access). Refresh with build:data.
+  "lamb-leg-raw": { ironMg: 1.8, potassiumMg: 350, magnesiumMg: 24, calciumMg: 8, zincMg: 3.6, vitaminB12Mcg: 2.4, vitaminDMcg: 0.2, seleniumMcg: 12, omega3Mg: 90 },
+  "lamb-shoulder-raw": { ironMg: 1.6, potassiumMg: 280, magnesiumMg: 21, calciumMg: 15, zincMg: 4.5, vitaminB12Mcg: 2.5, vitaminDMcg: 0.1, seleniumMcg: 12, omega3Mg: 100 },
+  "lamb-loin-chop-raw": { ironMg: 1.6, potassiumMg: 300, magnesiumMg: 23, calciumMg: 16, zincMg: 3.2, vitaminB12Mcg: 1.9, vitaminDMcg: 0.1, seleniumMcg: 13, omega3Mg: 90 },
+  "lamb-ground-raw": { ironMg: 1.5, potassiumMg: 230, magnesiumMg: 20, calciumMg: 16, zincMg: 3.4, vitaminB12Mcg: 2.2, vitaminDMcg: 0.1, seleniumMcg: 18, omega3Mg: 130 },
+  "goat-raw": { ironMg: 2.83, potassiumMg: 385, magnesiumMg: 21, calciumMg: 13, zincMg: 4, vitaminB12Mcg: 1.13, vitaminDMcg: 0, seleniumMcg: 8.8, omega3Mg: 30 },
+  "boar-wild-raw": { ironMg: 1, potassiumMg: 370, magnesiumMg: 25, calciumMg: 12, zincMg: 2.5, vitaminB12Mcg: 0.5, vitaminDMcg: 0, seleniumMcg: 10, omega3Mg: 40 },
+  "venison-deer-raw": { ironMg: 3.4, potassiumMg: 318, magnesiumMg: 20, calciumMg: 5, zincMg: 2.9, vitaminB12Mcg: 2.6, vitaminDMcg: 0, seleniumMcg: 9.7, omega3Mg: 60 },
+  "bison-lean-raw": { ironMg: 2.4, potassiumMg: 320, magnesiumMg: 22, calciumMg: 8, zincMg: 3.4, vitaminB12Mcg: 2.9, vitaminDMcg: 0, seleniumMcg: 24, omega3Mg: 40 },
   "salmon-atlantic-farmed-raw": { ironMg: 0.34, potassiumMg: 363, magnesiumMg: 29, calciumMg: 9, zincMg: 0.36, vitaminB12Mcg: 3.2, vitaminDMcg: 11, seleniumMcg: 24, omega3Mg: 2150 },
   "salmon-sockeye-wild-raw": { ironMg: 0.4, potassiumMg: 380, magnesiumMg: 29, calciumMg: 7, zincMg: 0.4, vitaminB12Mcg: 4.5, vitaminDMcg: 11, seleniumMcg: 30, omega3Mg: 1230 },
   "tuna-yellowfin-raw": { ironMg: 0.73, potassiumMg: 441, magnesiumMg: 35, calciumMg: 4, zincMg: 0.37, vitaminB12Mcg: 2.1, vitaminDMcg: 1.7, seleniumMcg: 36, omega3Mg: 230 },
@@ -52,6 +63,8 @@ export const MICROS: Record<string, Micronutrients> = {
   "cottage-cheese-fullfat": { ironMg: 0.07, potassiumMg: 104, magnesiumMg: 8, calciumMg: 83, zincMg: 0.4, vitaminB12Mcg: 0.43, vitaminDMcg: 0.1, seleniumMcg: 9.7, omega3Mg: 0 },
   // Halloumi: reference values for a brined semi-hard cheese; UNVERIFIED (no FDC access here). Refresh with build:data.
   "halloumi": { ironMg: 0.4, potassiumMg: 55, magnesiumMg: 25, calciumMg: 700, zincMg: 2.8, vitaminB12Mcg: 1.0, vitaminDMcg: 0.3, seleniumMcg: 15, omega3Mg: 0 },
+  // Paneer: reference values for a fresh whole-milk cheese; UNVERIFIED (no FDC access here). Refresh with build:data.
+  "paneer": { ironMg: 0.2, potassiumMg: 100, magnesiumMg: 22, calciumMg: 480, zincMg: 1.9, vitaminB12Mcg: 1.1, vitaminDMcg: 0.4, seleniumMcg: 10, omega3Mg: 0 },
   "tofu-firm": { ironMg: 2.7, potassiumMg: 148, magnesiumMg: 58, calciumMg: 350, zincMg: 1.6, vitaminB12Mcg: 0, vitaminDMcg: 0, seleniumMcg: 17, omega3Mg: 0 },
   "tofu-extra-firm": { ironMg: 2.3, potassiumMg: 170, magnesiumMg: 60, calciumMg: 190, zincMg: 1.5, vitaminB12Mcg: 0, vitaminDMcg: 0, seleniumMcg: 9, omega3Mg: 0 },
   "tofu-silken": { ironMg: 1.1, potassiumMg: 120, magnesiumMg: 30, calciumMg: 111, zincMg: 0.8, vitaminB12Mcg: 0, vitaminDMcg: 0, seleniumMcg: 9, omega3Mg: 0 },
