@@ -43,6 +43,7 @@ eggs, dairy, tofu) and cooked-stored legumes/grains are unaffected by the toggle
 | Turkey breast, skinless | 174515 | 171496 | 29.55 | 135 | roasted, meat only |
 | Ground turkey, 93/7 | 172850 | 172856 | 27.37 | 203 | cooked |
 | Duck breast, skinless | 172410 | 172413 | 23.48 | 201 | roasted, meat only |
+| Duck leg, skin-on | 172409 | 172412 | 19.00 | 337 | roasted, meat + skin (whole-bird proxy) |
 | Pork tenderloin | 168249 | 168251 | 26.17 | 143 | roasted, lean |
 | Pork loin chop | 168237 | 168238 | 27.10 | 175 | cooked, lean |
 | Pork shoulder | 167843 | 167844 | 24.65 | 269 | roasted, lean |
@@ -55,6 +56,15 @@ eggs, dairy, tofu) and cooked-stored legumes/grains are unaffected by the toggle
 | Chuck, lean | 174051 | 174052 | 30.50 | 213 | braised, lean |
 | Tenderloin, lean | 171812 | 171813 | 28.20 | 207 | broiled, lean |
 | Top round, lean | 171816 | 171817 | 30.90 | 202 | braised, lean |
+| Veal, leg (top round) | 174320 | 174321 | 31.90 | 172 | braised, lean |
+| Lamb, leg | 172542 | 172543 | 28.18 | 191 | roasted, lean |
+| Lamb, shoulder | 172554 | 172555 | 28.60 | 259 | braised, lean |
+| Lamb loin chop | 172524 | 172525 | 28.83 | 215 | broiled, lean |
+| Ground lamb | 174389 | 174390 | 25.03 | 283 | broiled |
+| Goat | 174379 | 174380 | 27.10 | 143 | roasted |
+| Wild boar | 174384 | 174385 | 28.29 | 160 | roasted |
+| Venison (deer) | 174375 | 174376 | 30.21 | 158 | roasted |
+| Bison, lean | 174372 | 174373 | 28.44 | 143 | roasted, lean |
 | Salmon, Atlantic (farmed) | 175167 | 175168 | 25.44 | 206 | dry heat |
 | Salmon, sockeye (wild) | 173691 | 173692 | 26.48 | 156 | dry heat |
 | Tuna, yellowfin | 175159 | 175160 | 29.15 | 139 | dry heat |
@@ -68,5 +78,11 @@ eggs, dairy, tofu) and cooked-stored legumes/grains are unaffected by the toggle
 | Mussels, blue | 174216 | 174217 | 23.80 | 172 | moist heat |
 | Crab, blue | 174204 | 174205 | 20.20 | 100 | moist heat |
 
-33 cooked records. Micronutrients and the density score stay on the primary (raw)
+42 cooked records. Micronutrients and the density score stay on the primary (raw)
 basis, so density is basis-approximate under the toggle (per spec).
+
+Note: the lamb, goat, game (boar/venison/bison), veal, and duck-leg records above
+were added later and are compiled from USDA SR Legacy game/lamb entries; like the
+rest of this table they are UNVERIFIED here and must be confirmed with `build:data`.
+The duck-leg record uses the whole-bird "meat and skin" entry as a proxy (USDA has
+no discrete leg cut).
