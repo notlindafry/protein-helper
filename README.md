@@ -37,7 +37,7 @@ just arithmetic, so it falls out of the same engine.
 
 ## Tech stack
 
-- **Next.js 14 (App Router) + TypeScript**, deployed on Vercel.
+- **Next.js 16 (App Router) + React 19 + TypeScript**, deployed on Vercel. Requires Node 20.9 or newer.
 - **Tailwind CSS**, colours referenced as arbitrary values against the `:root` design
   tokens in `app/globals.css` (`bg-[var(--surface)]`, `text-[var(--text)]`, …).
 - **Fonts** via `next/font/google` (Space Grotesk display, Inter body), self-hosted at

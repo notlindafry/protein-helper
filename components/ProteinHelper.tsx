@@ -61,6 +61,9 @@ export default function ProteinHelper() {
   const [hydrated, setHydrated] = useState(false);
 
   // Hydrate persisted prefs after mount (avoids SSR/client mismatch).
+  // localStorage is unavailable during prerender, so reading it in a post-mount
+  // effect and setting state once is intentional here; it runs a single time.
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     const p = loadPersisted();
     if (p.basis === "raw" || p.basis === "cooked") setBasis(p.basis);
@@ -70,6 +73,7 @@ export default function ProteinHelper() {
       setHusbandRaw(p.husbandTarget);
     setHydrated(true);
   }, []);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   // Persist the four allowed values whenever they change (after hydration).
   useEffect(() => {
